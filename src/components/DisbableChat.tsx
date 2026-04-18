@@ -30,17 +30,8 @@ const DisableChat = () => {
     };
    
     return (
-        <div style={{
-            width:"100%",
-            marginRight:"4px",
-            marginLeft:"4px",
-            marginTop:"2px",
-            marginBottom:"2px",
-            border:1,
-            borderColor:"white"
-        }}>
+       
         <button onClick={disableChatPw}>{isChatDisabled ? "Enable Chat":"Disable Chat"}</button>
-        </div>
     )
 }
 export default DisableChat

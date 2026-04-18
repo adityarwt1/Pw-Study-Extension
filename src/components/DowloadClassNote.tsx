@@ -28,7 +28,7 @@ const DownLoadAttachement = ()=>{
                     const pdfAccessUrl = defaultAcess.baseUrl+defaultAcess.key
                     window.open(pdfAccessUrl, "blank")
                 })()
-                console.log(window.localStorage)
+                // console.log(window.localStorage)
                 // console.log(window.location.href)
 
             },
