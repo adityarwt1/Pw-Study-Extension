@@ -16,7 +16,7 @@ const DarkThemScriptForPw = () => {
         // Contributions to the same will be appreciated.
 
         var light = true;
-        var fixed = false;
+        // var fixed = false;
 
         // This logic handles the changing of theme
         function change_theme() {

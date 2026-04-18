@@ -63,16 +63,20 @@ chrome.runtime.onInstalled.addListener((details) => {
     });
   }
 
-  // Create context menu (moved here so it runs on every install/update)
-  chrome.contextMenus.create({
-    id: 'myExtension',
-    title: 'Send selection to Extension',
-    contexts: ['selection'],
-  }, () => {
-    if (chrome.runtime.lastError) {
-      log('warn', 'Context menu already exists (normal on update)');
-    }
-  });
+  // Create context menu (only if API is available)
+  if (chrome.contextMenus?.create) {
+    chrome.contextMenus.create({
+      id: 'myExtension',
+      title: 'Send selection to Extension',
+      contexts: ['selection'],
+    }, () => {
+      if (chrome.runtime.lastError) {
+        log('warn', 'Context menu already exists (normal on update)');
+      }
+    });
+  } else {
+    log('warn', 'contextMenus API unavailable (check "contextMenus" permission)');
+  }
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -88,6 +92,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   log('info', `Message received: ${request.action}`, { tabId: sender.tab?.id, url: sender.tab?.url });
 
   switch (request.action) {
+    case 'getActiveWindowAndTab':
+      Promise.all([
+        chrome.windows.getLastFocused({ populate: false }),
+        chrome.tabs.query({ active: true, lastFocusedWindow: true }),
+      ]).then(([win, tabs]) => {
+        const tab = tabs?.[0] || null;
+        safeSendResponse(sendResponse, {
+          status: 'success',
+          windowId: win?.id ?? null,
+          tabId: tab?.id ?? null,
+          url: tab?.url ?? null,
+          title: tab?.title ?? null,
+        });
+      }).catch((err) => {
+        log('error', 'Failed to get active window/tab', { err: String(err) });
+        safeSendResponse(sendResponse, { status: 'error', message: 'Failed to get active window/tab' });
+      });
+      return true;
+
+    case 'getActiveTabElementHtml': {
+      const selector = request?.selector;
+      if (!selector || typeof selector !== 'string') {
+        safeSendResponse(sendResponse, { status: 'error', message: 'Missing selector string' });
+        return true;
+      }
+
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }).then(([tab]) => {
+        if (!tab?.id) {
+          safeSendResponse(sendResponse, { status: 'error', message: 'No active tab' });
+          return;
+        }
+
+        if (!chrome.scripting?.executeScript) {
+          safeSendResponse(sendResponse, { status: 'error', message: 'scripting API unavailable (add "scripting" permission)' });
+          return;
+        }
+
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: (sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return { found: false, html: null };
+            return { found: true, html: el.outerHTML };
+          },
+          args: [selector],
+        }).then((results) => {
+          const result = results?.[0]?.result || { found: false, html: null };
+          safeSendResponse(sendResponse, { status: 'success', ...result });
+        }).catch((err) => {
+          safeSendResponse(sendResponse, { status: 'error', message: String(err) });
+        });
+      });
+      return true;
+    }
+
     case 'ping':
       safeSendResponse(sendResponse, { status: 'success', message: 'Pong from enhanced background!', data: request.data });
       break;
@@ -246,20 +305,24 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // ========================
 // KEYBOARD SHORTCUTS
 // ========================
-chrome.commands.onCommand.addListener((command) => {
-  log('info', `Command triggered: ${command}`);
+if (chrome.commands?.onCommand?.addListener) {
+  chrome.commands.onCommand.addListener((command) => {
+    log('info', `Command triggered: ${command}`);
 
-  if (command === 'toggle-feature') {
-    chrome.storage.local.get(['enabled']).then(({ enabled = true }) => {
-      const newState = !enabled;
-      chrome.storage.local.set({ enabled: newState });
-      chrome.action.setBadgeText({ text: newState ? 'ON' : 'OFF' });
-      log('info', `Feature toggled to: ${newState}`);
-    });
-  }
+    if (command === 'toggle-feature') {
+      chrome.storage.local.get(['enabled']).then(({ enabled = true }) => {
+        const newState = !enabled;
+        chrome.storage.local.set({ enabled: newState });
+        chrome.action.setBadgeText({ text: newState ? 'ON' : 'OFF' });
+        log('info', `Feature toggled to: ${newState}`);
+      });
+    }
 
-  // Add more commands here from manifest.json "commands" section
-});
+    // Add more commands here from manifest.json "commands" section
+  });
+} else {
+  log('warn', 'commands API unavailable (check manifest "commands")');
+}
 
 // ========================
 // ALARMS & PERIODIC TASKS (solve background automation problems)
@@ -288,14 +351,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // NOTIFICATIONS (user interaction)
 // ========================
 // Requires "notifications" permission
-chrome.notifications.onClicked.addListener((notificationId) => {
-  log('info', `Notification clicked: ${notificationId}`);
-  // Open a specific tab or popup
-});
+if (chrome.notifications?.onClicked?.addListener) {
+  chrome.notifications.onClicked.addListener((notificationId) => {
+    log('info', `Notification clicked: ${notificationId}`);
+    // Open a specific tab or popup
+  });
 
-chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
-  log('info', `Notification button ${buttonIndex} clicked`);
-});
+  chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+    log('info', `Notification button ${buttonIndex} clicked`);
+  });
+} else {
+  log('warn', 'notifications API unavailable (check "notifications" permission)');
+}
 
 // ========================
 // OPTIONAL ADVANCED FEATURES (uncomment as needed)
@@ -321,4 +388,67 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
 // ========================
 // FINAL EXPORT
 // ========================
+// background.js
+
+const PW_URL_PATTERN = "https://www.pw.live";
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Check if the page has finished loading and matches the PW URL
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
+    
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: pwDarkModeScript
+    });
+  }
+});
+
+// The actual script to be injected
+function pwDarkModeScript() {
+  // Prevent double injection
+  if (window.hasDarkModeApplied) return;
+  window.hasDarkModeApplied = true;
+
+  let light = true;
+
+  function change_theme() {
+    const html = document.getElementsByTagName("html")[0];
+    if (light) {
+      html.style.filter = "invert(1) hue-rotate(180deg)";
+      light = false;
+    } else {
+      html.style.filter = "invert(0) hue-rotate(0deg)";
+      light = true;
+    }
+    fix_containers();
+  }
+
+  function fix_containers() {
+    const imgs = document.getElementsByTagName("img");
+    const vids = document.getElementsByTagName("video");
+    const pwlogo = document.getElementsByClassName("mouse_pointer")[0];
+
+    for (let img of imgs) {
+      img.style.filter = light ? "" : "invert(1) hue-rotate(180deg)";
+    }
+    for (let vid of vids) {
+      vid.style.filter = light ? "" : "invert(1) hue-rotate(180deg)";
+    }
+    if (pwlogo) {
+      pwlogo.style.filter = light ? "" : "invert(0) hue-rotate(180deg)";
+    }
+  }
+
+  // Hotkeys: Shift + Alt + D
+  document.addEventListener('keyup', (e) => {
+    if (e.keyCode === 68 && e.altKey && e.shiftKey) {
+      change_theme();
+    } else if (e.keyCode === 70 && e.altKey && e.shiftKey) {
+      fix_containers();
+    }
+  });
+
+  // Auto-run on load
+  change_theme();
+}
 export {};
