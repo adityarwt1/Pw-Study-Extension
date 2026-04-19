@@ -5,8 +5,7 @@ console.log('🚀 Background service worker loaded! (Fully enhanced template)');
 // ========================
 // HELPER FUNCTIONS
 // ========================
-// Centralized error handling and safe response (solves common "message channel closed" errors)
-const safeSendResponse = (sendResponse , data) => {
+const safeSendResponse = (sendResponse, data) => {
   try {
     sendResponse(data);
   } catch (err) {
@@ -14,7 +13,6 @@ const safeSendResponse = (sendResponse , data) => {
   }
 };
 
-// Centralized logging (helps debug more complex problems)
 const log = (type, message, data) => {
   const entry = {
     timestamp: new Date().toISOString(),
@@ -23,10 +21,9 @@ const log = (type, message, data) => {
     data: data || {},
   };
   console[type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log'](`[BG] ${message}`, data);
-  // Optional: You can also save logs to storage for later review
   chrome.storage.local.get('logs').then(({ logs = [] }) => {
     logs.unshift(entry);
-    if (logs.length > 100) logs.pop(); // keep only last 100 logs
+    if (logs.length > 100) logs.pop();
     chrome.storage.local.set({ logs });
   });
 };
@@ -34,7 +31,6 @@ const log = (type, message, data) => {
 // ========================
 // INSTALL / UPDATE / STARTUP
 // ========================
-// Handles install, update, and browser startup (solves data migration & first-run problems)
 chrome.runtime.onInstalled.addListener((details) => {
   log('info', `Extension ${details.reason}`, details);
 
@@ -51,19 +47,16 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 
   if (details.reason === 'update') {
-    // Data migration example (solves breaking changes across versions)
     chrome.storage.local.get(null).then((data) => {
       if (!data.migratedToV2) {
         log('info', 'Running data migration for update');
         chrome.storage.local.set({
           migratedToV2: true,
-          // Add any new default keys here
         });
       }
     });
   }
 
-  // Create context menu (only if API is available)
   if (chrome.contextMenus?.create) {
     chrome.contextMenus.create({
       id: 'myExtension',
@@ -81,13 +74,11 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.runtime.onStartup.addListener(() => {
   log('info', 'Browser startup – background reloaded');
-  // Example: Run any startup tasks (check storage quota, clean old data, etc.)
 });
 
 // ========================
-// MESSAGE HANDLING (CORE – solves 90% of extension problems)
+// MESSAGE HANDLING
 // ========================
-// Expanded with 15+ common actions so your extension can solve way more real-world problems
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   log('info', `Message received: ${request.action}`, { tabId: sender.tab?.id, url: sender.tab?.url });
 
@@ -111,42 +102,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       return true;
 
-    case 'getActiveTabElementHtml': {
-      const selector = request?.selector;
-      if (!selector || typeof selector !== 'string') {
-        safeSendResponse(sendResponse, { status: 'error', message: 'Missing selector string' });
-        return true;
-      }
-
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }).then(([tab]) => {
-        if (!tab?.id) {
-          safeSendResponse(sendResponse, { status: 'error', message: 'No active tab' });
-          return;
-        }
-
-        if (!chrome.scripting?.executeScript) {
-          safeSendResponse(sendResponse, { status: 'error', message: 'scripting API unavailable (add "scripting" permission)' });
-          return;
-        }
-
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: (sel) => {
-            const el = document.querySelector(sel);
-            if (!el) return { found: false, html: null };
-            return { found: true, html: el.outerHTML };
-          },
-          args: [selector],
-        }).then((results) => {
-          const result = results?.[0]?.result || { found: false, html: null };
-          safeSendResponse(sendResponse, { status: 'success', ...result });
-        }).catch((err) => {
-          safeSendResponse(sendResponse, { status: 'error', message: String(err) });
-        });
-      });
-      return true;
-    }
-
     case 'ping':
       safeSendResponse(sendResponse, { status: 'success', message: 'Pong from enhanced background!', data: request.data });
       break;
@@ -155,79 +110,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.storage.local.get(null).then((data) => {
         safeSendResponse(sendResponse, { status: 'success', data });
       });
-      return true; // keep channel open for async
-
-    case 'logPageInfo':
-      log('info', 'Page info from content script', {
-        url: sender.tab?.url,
-        title: request.title,
-        tabId: sender.tab?.id,
-      });
-      safeSendResponse(sendResponse, { status: 'logged' });
-      break;
-
-    // NEW: Solve tab automation problems
-    case 'getCurrentTab':
-      chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-        safeSendResponse(sendResponse, { status: 'success', tab });
-      });
-      return true;
-
-    case 'openNewTab':
-      chrome.tabs.create({ url: request.url || 'https://google.com' }).then((tab) => {
-        safeSendResponse(sendResponse, { status: 'success', tabId: tab.id });
-      });
-      return true;
-
-    case 'closeTab':
-      if (request.tabId) chrome.tabs.remove(request.tabId);
-      safeSendResponse(sendResponse, { status: 'success' });
-      break;
-
-    case 'getAllTabs':
-      chrome.tabs.query({}).then((tabs) => safeSendResponse(sendResponse, { status: 'success', tabs }));
-      return true;
-
-    // NEW: Solve user notification & feedback problems
-    case 'showNotification':
-      // Requires "notifications" permission in manifest.json
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('icon-128.png'), // add your icon
-        title: request.title || 'Extension Alert',
-        message: request.message || 'Something happened!',
-        buttons: request.buttons || [],
-      }).then((id) => safeSendResponse(sendResponse, { status: 'success', notificationId: id }));
-      return true;
-
-    // NEW: Solve UI feedback problems (toolbar badge)
-    case 'updateBadge':
-      // Requires "action" in manifest (or "browser_action" for older)
-      chrome.action.setBadgeText({ text: request.text || '' });
-      if (request.color) chrome.action.setBadgeBackgroundColor({ color: request.color });
-      safeSendResponse(sendResponse, { status: 'success' });
-      break;
-
-    // NEW: Solve dynamic content injection problems
-    case 'injectScript':
-      // Requires "scripting" permission + host_permissions in manifest
-      if (sender.tab?.id) {
-        chrome.scripting.executeScript({
-          target: { tabId: sender.tab.id },
-          files: request.files || [],
-          function: request.func, // or use world: 'MAIN' / 'ISOLATED'
-        }).then(() => safeSendResponse(sendResponse, { status: 'success' }));
-      }
-      return true;
-
-    // NEW: Solve screenshot / visual data problems
-    case 'captureScreenshot':
-      // Requires "activeTab" or host permission
-      if (sender.tab?.id) {
-        chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }).then((dataUrl) => {
-          safeSendResponse(sendResponse, { status: 'success', dataUrl });
-        });
-      }
       return true;
 
     default:
@@ -235,167 +117,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       safeSendResponse(sendResponse, { status: 'error', message: 'Unknown action' });
   }
 
-  return true; // keep channel open for any async responses
-});
-
-// Long-lived connection support (solves real-time / streaming problems)
-chrome.runtime.onConnect.addListener((port) => {
-  log('info', `Port connected: ${port.name}`);
-
-  if (port.name === 'content-connection') {
-    port.onMessage.addListener((msg) => {
-      log('info', `Port message: ${msg.action}`, msg);
-      // Example: keep a live feed or process heavy data
-      if (msg.action === 'heartbeat') port.postMessage({ status: 'alive' });
-    });
-
-    port.onDisconnect.addListener(() => log('info', 'Port disconnected'));
-  }
+  return true;
 });
 
 // ========================
-// TAB & WINDOW EVENTS (solve navigation & multi-tab problems)
+// TAB EVENTS
 // ========================
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     log('info', 'Tab fully loaded', { tabId, url: tab.url, title: tab.title });
-    // You can auto-inject content script logic here if needed
-  }
-});
-
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  log('info', 'Tab activated', activeInfo);
-});
-
-chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
-  log('info', 'Tab closed', { tabId, removeInfo });
-});
-
-// ========================
-// TOOLBAR ACTION (popup icon click)
-// ========================
-// Requires "action" in manifest.json
-chrome.action.onClicked.addListener((tab) => {
-  log('info', 'Toolbar icon clicked', { tabId: tab.id });
-  // Example: open side panel (Manifest V3)
-  chrome.sidePanel.open({ tabId: tab.id }); // Requires "sidePanel" permission
-  // Or open popup manually, toggle feature, etc.
-});
-
-// ========================
-// CONTEXT MENU (already present + enhanced)
-// ========================
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'myExtension') {
-    log('info', 'Context menu used', { selection: info.selectionText, pageUrl: info.pageUrl });
-
-    if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, {
-        action: 'processSelection',
-        text: info.selectionText,
-        pageUrl: info.pageUrl,
-      });
-    }
-  }
-});
-
-// You can add dynamic menus anytime:
-// chrome.contextMenus.create({ id: 'submenu', title: 'Advanced', parentId: 'myExtension' });
-
-// ========================
-// KEYBOARD SHORTCUTS
-// ========================
-if (chrome.commands?.onCommand?.addListener) {
-  chrome.commands.onCommand.addListener((command) => {
-    log('info', `Command triggered: ${command}`);
-
-    if (command === 'toggle-feature') {
-      chrome.storage.local.get(['enabled']).then(({ enabled = true }) => {
-        const newState = !enabled;
-        chrome.storage.local.set({ enabled: newState });
-        chrome.action.setBadgeText({ text: newState ? 'ON' : 'OFF' });
-        log('info', `Feature toggled to: ${newState}`);
-      });
-    }
-
-    // Add more commands here from manifest.json "commands" section
-  });
-} else {
-  log('warn', 'commands API unavailable (check manifest "commands")');
-}
-
-// ========================
-// ALARMS & PERIODIC TASKS (solve background automation problems)
-// ========================
-chrome.alarms.create('periodicTask', { periodInMinutes: 1 });
-chrome.alarms.create('dailyCleanup', { when: Date.now() + 24 * 60 * 60 * 1000 }); // one-time example
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  log('info', `Alarm fired: ${alarm.name}`);
-
-  if (alarm.name === 'periodicTask') {
-    // Example: background sync, cleanup, analytics, etc.
-    console.log('✅ Periodic task running');
-    // You can call any of the message handlers internally here
-  }
-
-  if (alarm.name === 'dailyCleanup') {
-    // Clean old logs, etc.
-    chrome.storage.local.get('logs').then(({ logs = [] }) => {
-      chrome.storage.local.set({ logs: logs.slice(0, 50) });
-    });
   }
 });
 
 // ========================
-// NOTIFICATIONS (user interaction)
+// PW.LIVE DARK MODE
 // ========================
-// Requires "notifications" permission
-if (chrome.notifications?.onClicked?.addListener) {
-  chrome.notifications.onClicked.addListener((notificationId) => {
-    log('info', `Notification clicked: ${notificationId}`);
-    // Open a specific tab or popup
-  });
-
-  chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
-    log('info', `Notification button ${buttonIndex} clicked`);
-  });
-} else {
-  log('warn', 'notifications API unavailable (check "notifications" permission)');
-}
-
-// ========================
-// OPTIONAL ADVANCED FEATURES (uncomment as needed)
-// ========================
-
-// External messaging (talk to other extensions or websites)
-// chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => { ... });
-
-// Declarative Net Request (block/modify network requests)
-// Requires "declarativeNetRequest" + "declarativeNetRequestWithHostAccess" permissions
-// chrome.declarativeNetRequest.updateDynamicRules({ ... });
-
-// Omnibox (custom address bar)
-// chrome.omnibox.onInputEntered.addListener((text) => { chrome.tabs.create({ url: `https://example.com/search?q=${text}` }); });
-
-// Idle detection
-// chrome.idle.setDetectionInterval(60); // 1 minute
-// chrome.idle.onStateChanged.addListener((newState) => log('info', `User is now ${newState}`));
-
-// Set uninstall feedback page (great for user retention)
-// chrome.runtime.setUninstallURL('https://your-site.com/uninstall-feedback');
-
-// ========================
-// FINAL EXPORT
-// ========================
-// background.js
-
 const PW_URL_PATTERN = "https://www.pw.live";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Check if the page has finished loading and matches the PW URL
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
-    
     chrome.scripting.executeScript({
       target: { tabId: tabId },
       func: pwDarkModeScript
@@ -403,9 +143,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-// The actual script to be injected
 function pwDarkModeScript() {
-  // Prevent double injection
   if (window.hasDarkModeApplied) return;
   window.hasDarkModeApplied = true;
 
@@ -439,7 +177,6 @@ function pwDarkModeScript() {
     }
   }
 
-  // Hotkeys: Shift + Alt + D
   document.addEventListener('keyup', (e) => {
     if (e.keyCode === 68 && e.altKey && e.shiftKey) {
       change_theme();
@@ -448,7 +185,146 @@ function pwDarkModeScript() {
     }
   });
 
-  // Auto-run on load
   change_theme();
 }
+
+// ========================
+// YOUTUBE EDUCATIONAL FILTER
+// ========================
+const YOUTUBE_URL = 'https://www.youtube.com';
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: hideNonEducationalVideos
+    });
+  }
+});
+
+// This function gets injected into the YouTube page
+function hideNonEducationalVideos() {
+  console.log('🎓 Educational YouTube Filter Active');
+  
+  // Prevent double initialization
+  if (window.hasEducationalFilter) return;
+  window.hasEducationalFilter = true;
+
+  // Educational keywords to filter
+  const educationalKeywords = [
+    'jee', 'nta', 'exam', 'study', 'tutorial', 'learn', 
+    'education', 'college', 'neet', 'upsc', 'iit', 
+    'physics', 'chemistry', 'mathematics', 'biology',
+    'class', 'lecture', 'course', 'coaching'
+  ];
+
+  function filterVideos() {
+    const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
+    let hiddenCount = 0;
+    let shownCount = 0;
+
+    videoElements.forEach(video => {
+      const titleSpan = video.querySelector('.ytLockupMetadataViewModelTitle span.ytAttributedStringHost');
+      
+      if (titleSpan) {
+        const titleText = titleSpan.textContent.toLowerCase();
+        
+        const isEducational = educationalKeywords.some(keyword => 
+          titleText.includes(keyword)
+        );
+        
+        if (!isEducational) {
+          video.style.display = 'none';
+          hiddenCount++;
+        } else {
+          video.style.display = '';
+          shownCount++;
+        }
+      }
+    });
+
+    console.log(`✅ Filtered: ${shownCount} educational videos shown, ${hiddenCount} hidden`);
+  }
+
+  // Initial filter
+  filterVideos();
+
+  // Watch for new videos (infinite scroll)
+  const contentsElement = document.querySelector('#contents');
+  if (contentsElement) {
+    const observer = new MutationObserver(() => {
+      filterVideos();
+    });
+
+    observer.observe(contentsElement, {
+      childList: true,
+      subtree: true
+    });
+    
+    console.log('👀 Watching for new videos...');
+  }
+}
+
+// ========================
+// YOUTUBE SHORTS HIDER
+// ========================
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: hideYouTubeShorts
+    });
+  }
+});
+
+function hideYouTubeShorts() {
+  console.log('🚫 Hiding YouTube Shorts');
+  
+  if (window.hasShortsHider) return;
+  window.hasShortsHider = true;
+
+  function hideShorts() {
+    // Hide Shorts shelf on homepage
+    const shortsShelf = document.querySelector('ytd-reel-shelf-renderer');
+    if (shortsShelf) {
+      shortsShelf.style.display = 'none';
+      console.log('Hidden Shorts shelf');
+    }
+
+    // Hide individual short videos
+    const shortVideos = document.querySelectorAll('ytd-rich-item-renderer');
+    shortVideos.forEach(video => {
+      const thumbnail = video.querySelector('yt-thumbnail-view-model');
+      if (thumbnail) {
+        const overlays = thumbnail.querySelectorAll('.ytThumbnailBadgeViewModelHost');
+        overlays.forEach(overlay => {
+          const badgeText = overlay.textContent.trim();
+          // Shorts don't have time badges like "10:55"
+          if (!badgeText.includes(':')) {
+            video.style.display = 'none';
+          }
+        });
+      }
+    });
+
+    // Hide Shorts in sidebar
+    const sidebarShorts = document.querySelectorAll('ytd-guide-entry-renderer');
+    sidebarShorts.forEach(entry => {
+      if (entry.textContent.includes('Shorts')) {
+        entry.style.display = 'none';
+      }
+    });
+  }
+
+  // Run initially
+  setTimeout(hideShorts, 1000);
+
+  // Watch for changes
+  const observer = new MutationObserver(hideShorts);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
 export {};
