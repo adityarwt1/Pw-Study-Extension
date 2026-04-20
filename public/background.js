@@ -193,14 +193,14 @@ function pwDarkModeScript() {
 // ========================
 const YOUTUBE_URL = 'https://www.youtube.com';
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: hideNonEducationalVideos
-    });
-  }
-});
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
+//     chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       func: hideNonEducationalVideos
+//     });
+//   }
+// });
 
 // This function gets injected into the YouTube page
 function hideNonEducationalVideos() {
@@ -265,17 +265,17 @@ function hideNonEducationalVideos() {
   }
 }
 
-// ========================
-// YOUTUBE SHORTS HIDER
-// ========================
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: hideYouTubeShorts
-    });
-  }
-});
+// // ========================
+// // YOUTUBE SHORTS HIDER
+// // ========================
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
+//     chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       func: hideYouTubeShorts
+//     });
+//   }
+// });
 
 function hideYouTubeShorts() {
   console.log('🚫 Hiding YouTube Shorts');
