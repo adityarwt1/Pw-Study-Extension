@@ -38,7 +38,7 @@ const TimeTravel = () => {
                 args[6],
               );
             } else {
-              super(...(args)); // fallback (rare case)
+            //   super(...(args)); `// fallback (rare case)
             }
           }
         }

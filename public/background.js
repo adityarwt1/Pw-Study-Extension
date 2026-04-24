@@ -133,15 +133,31 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // PW.LIVE DARK MODE
 // ========================
 const PW_URL_PATTERN = "https://www.pw.live";
+const YOUTUBE_URL_PATTERN = "youtube.com";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: pwDarkModeScript
-    });
+  // Check if the page has finished loading and has a URL
+  if (changeInfo.status === 'complete' && tab.url) {
+    
+    // Check if the URL contains youtube.com
+    if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
+      
+      // Correct API to close a specific tab
+      chrome.tabs.remove(tabId, () => {
+        console.log("YouTube blocked and tab closed.");
+      });
+    }
   }
 });
+
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
+//     chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       func: pwDarkModeScript
+//     });
+//   }
+// });
 
 function pwDarkModeScript() {
   if (window.hasDarkModeApplied) return;

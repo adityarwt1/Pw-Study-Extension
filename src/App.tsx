@@ -4,6 +4,7 @@ import OpenBatch from "./components/OpenLakshya";
 import OpenRecentLecture from "./components/OpenRecentLeacture";
 import DarkThemScriptForPw from "./components/DarkTheme"
 import WebsiteOpener from "./components/WebsiteOpener";
+import MultiplicationTables from "./components/MulitipleTable";
 const MainPlayGround = () => {
   return (
     <div>
@@ -14,6 +15,7 @@ const MainPlayGround = () => {
       <OpenRecentLecture/>
       <DarkThemScriptForPw/>
       <WebsiteOpener name="Exam Goal" url="https://room.examgoal.com/"/>
+      <MultiplicationTables/>
     </div>
   );
 };
