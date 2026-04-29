@@ -134,8 +134,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ========================
 const PW_URL_PATTERN = "https://www.pw.live";
 const YOUTUBE_URL_PATTERN = "youtube.com";
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+(async()=>{
+await chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   // Check if the page has finished loading and has a URL
   if (changeInfo.status === 'complete' && tab.url) {
     
@@ -149,6 +149,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     }
   }
 });
+})()
 
 // chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 //   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
@@ -159,6 +160,19 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 //   }
 // });
 
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: handleHideTimeStams
+    });
+  }
+});
+
+const handleHideTimeStams = ()=>{
+  const timeDiv = document.getElementById("current-time-placeholder")
+  timeDiv.style.opacity  = 0
+}
 function pwDarkModeScript() {
   if (window.hasDarkModeApplied) return;
   window.hasDarkModeApplied = true;
