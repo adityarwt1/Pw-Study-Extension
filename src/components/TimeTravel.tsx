@@ -2,38 +2,38 @@ import { getAcitveWindow } from "../utils/chromeApis/getCurrentAcitivewindow";
 import { excuteScript } from "../utils/chromeApis/runScriptOn";
 
 const TimeTravel = () => {
-  const handleTimeTravel2 = () => {
-    // Save original Date
-    const OriginalDate = Date;
-     const changeDate = new Date(
-        new Date().getTime() + 7 * 24 * 60 * 60 * 1000,
-      ).toISOString();
-    // Override Date constructor - local version
-    (Date as any) = class extends OriginalDate {
-      constructor(...args: any[]) {
-        if (args.length === 0) {
-          // Set a specific date when new Date() is called
-          super(changeDate);
-        } else {
-          if (args.length === 1) {
-            super(args[0]);
-          } else if (args.length === 3) {
-            super(args[0], args[1], args[2]);
-          } else if (args.length === 7) {
-            super(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-          }
-        }
-      }
+  // const handleTimeTravel2 = () => {
+  //   // Save original Date
+  //   const OriginalDate = Date;
+  //    const changeDate = new Date(
+  //       new Date().getTime() + 7 * 24 * 60 * 60 * 1000,
+  //     ).toISOString();
+  //   // Override Date constructor - local version
+  //   (Date as any) = class extends OriginalDate {
+  //     constructor(...args: any[]) {
+  //       if (args.length === 0) {
+  //         // Set a specific date when new Date() is called
+  //         super(changeDate);
+  //       } else {
+  //         if (args.length === 1) {
+  //           super(args[0]);
+  //         } else if (args.length === 3) {
+  //           super(args[0], args[1], args[2]);
+  //         } else if (args.length === 7) {
+  //           super(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+  //         }
+  //       }
+  //     }
 
-      static now() {
-        // Override Date.now()
-        return new OriginalDate(changeDate).getTime();
-      }
-    };
+  //     static now() {
+  //       // Override Date.now()
+  //       return new OriginalDate(changeDate).getTime();
+  //     }
+  //   };
 
-    // Now any new Date() calls will return your custom time
-    console.log("Time Travel v2 activated:", new Date());
-  };
+  //   // Now any new Date() calls will return your custom time
+  //   console.log("Time Travel v2 activated:", new Date());
+  // };
   const handleTimeTravel = async () => {
     const response = await getAcitveWindow();
     if (!response || !response.id) {
@@ -91,10 +91,7 @@ const TimeTravel = () => {
   };
 
   return (
-    <div>
       <button onClick={handleTimeTravel}>Time Travel (Window)</button>
-      <button onClick={handleTimeTravel2}>Time Travel v2 (Local)</button>
-    </div>
   );
 };
 
