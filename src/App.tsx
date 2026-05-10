@@ -6,6 +6,7 @@ import DarkThemScriptForPw from "./components/DarkTheme"
 import WebsiteOpener from "./components/WebsiteOpener";
 import HideStamps from "./components/HideTimeStamps";
 import TimeTravel from "./components/TimeTravel";
+import EnabledRightClick from "./components/EnabledRightClick";
 // import MultiplicationTables from "./components/MulitipleTable";
 const MainPlayGround = () => {
   return (
@@ -20,6 +21,7 @@ const MainPlayGround = () => {
     <HideStamps/>
       {/* <MultiplicationTables/> */}
       <TimeTravel/>
+      <EnabledRightClick/>
     </div>
   );
 };

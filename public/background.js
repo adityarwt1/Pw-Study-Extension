@@ -132,7 +132,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // ========================
 // PW.LIVE DARK MODE
 // ========================
-const PW_URL_PATTERN = "https://www.pw.live";
+const PW_URL_PATTERN = "pw.live";
 const YOUTUBE_URL_PATTERN = "youtube.com";
 (async()=>{
 await chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
