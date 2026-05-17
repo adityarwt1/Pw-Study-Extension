@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getAcitveWindow } from "../utils/chromeApis/getCurrentAcitivewindow";
 import { excuteScript } from "../utils/chromeApis/runScriptOn";
 
@@ -28,7 +28,10 @@ const DisableChat = () => {
             }
         }, [newState]); // 👈 pass state here
     };
-   
+   /// pre disable chat 
+   useEffect(()=>{
+    disableChatPw()
+   },[])
     return (
        
         <button onClick={disableChatPw}>{isChatDisabled ? "Enable Chat":"Disable Chat"}</button>

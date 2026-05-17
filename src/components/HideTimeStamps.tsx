@@ -43,6 +43,7 @@ const HideStamps = () => {
   // 3. Auto-run on mount (Optional): Runs when the component loads
   useEffect(() => {
     handleOnClickFunction();
+    handleHideTimeStams()
   }, []); // Empty dependency array means it runs once on load
 
   return (

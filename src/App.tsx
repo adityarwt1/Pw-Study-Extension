@@ -15,6 +15,7 @@ const MainPlayGround = () => {
       <DownLoadAttachement />
       <OpenBatch name="Lakshya Batch" id="6779345c20fa0756e4a7fd08" />
       <OpenBatch name="Arjuna Batch" id="676e4dee1ec923bc192f38c9" />
+      <OpenBatch name="JEE One Revision" id="64e4c8338149b2001892a969" />
       <OpenRecentLecture/>
       <DarkThemScriptForPw/>
       <WebsiteOpener name="Exam Goal" url="https://room.examgoal.com/"/>
