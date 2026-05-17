@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Physics Wallah",
+  "version": "1.0.0",
+  "description": "A Chrome extension built with Vite, React, and TypeScript",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "pw.png"
+  },
+  "icons": {
+    "16": "pw.png",
+    "32": "pw.png",
+    "48": "pw.png",
+    "128": "pw.png"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "alarms",
+    "contextMenus",
+    "notifications",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "commands": {
+    "toggle-feature": {
+      "suggested_key": {
+        "default": "Alt+Shift+Y"
+      },
+      "description": "Toggle feature"
+    }
+  }
+}
