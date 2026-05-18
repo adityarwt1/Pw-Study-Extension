@@ -1,6 +1,6 @@
 /// <reference types="chrome" />
 
-console.log('🚀 Background service worker loaded! (Fully enhanced template)');
+console.log('Background service worker loaded!');
 
 // ========================
 // HELPER FUNCTIONS
@@ -43,7 +43,7 @@ chrome.runtime.onInstalled.addListener((details) => {
       version: chrome.runtime.getManifest().version,
       logs: [],
     });
-    log('info', 'First install – defaults set');
+    log('info', 'First install - defaults set');
   }
 
   if (details.reason === 'update') {
@@ -73,7 +73,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  log('info', 'Browser startup – background reloaded');
+  log('info', 'Browser startup - background reloaded');
 });
 
 // ========================
@@ -103,7 +103,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'ping':
-      safeSendResponse(sendResponse, { status: 'success', message: 'Pong from enhanced background!', data: request.data });
+      safeSendResponse(sendResponse, { status: 'success', message: 'Pong from background!', data: request.data });
       break;
 
     case 'getData':
@@ -130,231 +130,290 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // ========================
-// PW.LIVE DARK MODE
+// YOUTUBE BLOCKER
+// Block YouTube tabs automatically
 // ========================
-const PW_URL_PATTERN = "pw.live";
 const YOUTUBE_URL_PATTERN = "youtube.com";
-(async()=>{
-await chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Check if the page has finished loading and has a URL
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    
-    // Check if the URL contains youtube.com
     if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
-      
-      // Correct API to close a specific tab
       chrome.tabs.remove(tabId, () => {
         console.log("YouTube blocked and tab closed.");
       });
     }
   }
 });
-})()
 
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
-//     chrome.scripting.executeScript({
-//       target: { tabId: tabId },
-//       func: pwDarkModeScript
-//     });
-//   }
-// });
+// ========================
+// PW.LIVE HIDE TIMESTAMPS
+// Hides the current time display on PW.live
+// ========================
+const PW_URL_PATTERN = "pw.live";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
     chrome.scripting.executeScript({
       target: { tabId: tabId },
-      func: handleHideTimeStams
+      func: handleHideTimeStamps
     });
   }
 });
 
-const handleHideTimeStams = ()=>{
-  const timeDiv = document.getElementById("current-time-placeholder")
-  timeDiv.style.opacity  = 0
-}
-function pwDarkModeScript() {
-  if (window.hasDarkModeApplied) return;
-  window.hasDarkModeApplied = true;
-
-  let light = true;
-
-  function change_theme() {
-    const html = document.getElementsByTagName("html")[0];
-    if (light) {
-      html.style.filter = "invert(1) hue-rotate(180deg)";
-      light = false;
-    } else {
-      html.style.filter = "invert(0) hue-rotate(0deg)";
-      light = true;
-    }
-    fix_containers();
+// Function injected into PW.live to hide timestamp
+const handleHideTimeStamps = () => {
+  const timeDiv = document.getElementById("current-time-placeholder");
+  if (timeDiv) {
+    timeDiv.style.opacity = 0;
+    console.log('Timestamp hidden successfully');
+  } else {
+    console.log('Timestamp element not found on this page');
   }
-
-  function fix_containers() {
-    const imgs = document.getElementsByTagName("img");
-    const vids = document.getElementsByTagName("video");
-    const pwlogo = document.getElementsByClassName("mouse_pointer")[0];
-
-    for (let img of imgs) {
-      img.style.filter = light ? "" : "invert(1) hue-rotate(180deg)";
-    }
-    for (let vid of vids) {
-      vid.style.filter = light ? "" : "invert(1) hue-rotate(180deg)";
-    }
-    if (pwlogo) {
-      pwlogo.style.filter = light ? "" : "invert(0) hue-rotate(180deg)";
-    }
-  }
-
-  document.addEventListener('keyup', (e) => {
-    if (e.keyCode === 68 && e.altKey && e.shiftKey) {
-      change_theme();
-    } else if (e.keyCode === 70 && e.altKey && e.shiftKey) {
-      fix_containers();
-    }
-  });
-
-  change_theme();
-}
+};
 
 // ========================
-// YOUTUBE EDUCATIONAL FILTER
+// EXCALIDRAW AUTO-SAVE
+// Automatically saves Excalidraw drawings after idle period
+// Triggers Ctrl+S after user stops drawing/interacting
 // ========================
-const YOUTUBE_URL = 'https://www.youtube.com';
+const EXCALIDRAW_URL_PATTERN = "excalidraw.com";
 
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
-//     chrome.scripting.executeScript({
-//       target: { tabId: tabId },
-//       func: hideNonEducationalVideos
-//     });
-//   }
-// });
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url && tab.url.includes(EXCALIDRAW_URL_PATTERN)) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: excalidrawAutoSave
+    });
+  }
+});
 
-// This function gets injected into the YouTube page
-function hideNonEducationalVideos() {
-  console.log('🎓 Educational YouTube Filter Active');
-  
+/**
+ * Auto-save function for Excalidraw
+ * Monitors user activity and triggers Ctrl+S after idle period
+ * Configuration:
+ * - IDLE_TIME_MS: Time to wait after last activity before saving (default: 2000ms / 2 seconds)
+ * - MIN_TIME_BETWEEN_SAVES: Minimum interval between consecutive saves (default: 10000ms / 10 seconds)
+ * - ENABLE_VISUAL_INDICATOR: Show visual notification when saving (default: true)
+ */
+function excalidrawAutoSave() {
   // Prevent double initialization
-  if (window.hasEducationalFilter) return;
-  window.hasEducationalFilter = true;
+  if (window.hasExcalidrawAutoSave) return;
+  window.hasExcalidrawAutoSave = true;
 
-  // Educational keywords to filter
-  const educationalKeywords = [
-    'jee', 'nta', 'exam', 'study', 'tutorial', 'learn', 
-    'education', 'college', 'neet', 'upsc', 'iit', 
-    'physics', 'chemistry', 'mathematics', 'biology',
-    'class', 'lecture', 'course', 'coaching'
-  ];
+  console.log('Excalidraw Auto-Save Active');
 
-  function filterVideos() {
-    const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
-    let hiddenCount = 0;
-    let shownCount = 0;
+  // ===== CONFIGURATION =====
+  const TARGET_ORIGIN = 'https://excalidraw.com';
+  const IDLE_TIME_MS = 2000; // 2 seconds - Quick save
+  const MIN_TIME_BETWEEN_SAVES = 10000; // Minimum 10 seconds between saves
+  const ENABLE_VISUAL_INDICATOR = true; // Show save notification on screen
 
-    videoElements.forEach(video => {
-      const titleSpan = video.querySelector('.ytLockupMetadataViewModelTitle span.ytAttributedStringHost');
-      
-      if (titleSpan) {
-        const titleText = titleSpan.textContent.toLowerCase();
-        
-        const isEducational = educationalKeywords.some(keyword => 
-          titleText.includes(keyword)
-        );
-        
-        if (!isEducational) {
-          video.style.display = 'none';
-          hiddenCount++;
-        } else {
-          video.style.display = '';
-          shownCount++;
-        }
+  // ===== SCRIPT =====
+  if (window.location.origin === TARGET_ORIGIN) {
+    console.log('Auto-save script loaded');
+    console.log('Idle timeout:', IDLE_TIME_MS / 1000, 'seconds');
+
+    let idleTimer = null;
+    let lastSaveTime = Date.now();
+    let saveIndicator = null;
+
+    // Create visual save indicator
+    if (ENABLE_VISUAL_INDICATOR) {
+      saveIndicator = document.createElement('div');
+      saveIndicator.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 999999;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+      `;
+      saveIndicator.textContent = 'Auto-saved!';
+      document.body.appendChild(saveIndicator);
+    }
+
+    // Show save notification
+    function showSaveNotification() {
+      if (saveIndicator) {
+        saveIndicator.style.opacity = '1';
+        setTimeout(() => {
+          saveIndicator.style.opacity = '0';
+        }, 2000);
       }
+    }
+
+    // Trigger Ctrl+S
+    function triggerCtrlS() {
+      const now = Date.now();
+      const timeSinceLastSave = now - lastSaveTime;
+
+      if (timeSinceLastSave < MIN_TIME_BETWEEN_SAVES) {
+        console.log('Skipping save (too soon)');
+        return;
+      }
+
+      console.log('Auto-saving...');
+
+      const event = new KeyboardEvent('keydown', {
+        key: 's',
+        code: 'KeyS',
+        keyCode: 83,
+        which: 83,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true
+      });
+
+      document.dispatchEvent(event);
+
+      if (document.activeElement) {
+        document.activeElement.dispatchEvent(event);
+      }
+
+      lastSaveTime = now;
+      // showSaveNotification();
+      console.log('Saved at', new Date().toLocaleTimeString());
+    }
+
+    // Reset idle timer
+    function resetIdleTimer() {
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+
+      idleTimer = setTimeout(triggerCtrlS, IDLE_TIME_MS);
+    }
+
+    // Activity events
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'mouseup',
+      'touchstart',
+      'touchmove',
+      'touchend',
+      'keydown',
+      'wheel'
+    ];
+
+    // Attach listeners
+    activityEvents.forEach(eventType => {
+      document.addEventListener(eventType, resetIdleTimer, { passive: true });
     });
 
-    console.log(`✅ Filtered: ${shownCount} educational videos shown, ${hiddenCount} hidden`);
-  }
+    console.log('Ready! Draw and stop to auto-save.');
+    resetIdleTimer();
 
-  // Initial filter
-  filterVideos();
-
-  // Watch for new videos (infinite scroll)
-  const contentsElement = document.querySelector('#contents');
-  if (contentsElement) {
-    const observer = new MutationObserver(() => {
-      filterVideos();
-    });
-
-    observer.observe(contentsElement, {
-      childList: true,
-      subtree: true
-    });
-    
-    console.log('👀 Watching for new videos...');
+  } else {
+    console.log('Not on target website');
   }
 }
 
-// // ========================
-// // YOUTUBE SHORTS HIDER
-// // ========================
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(YOUTUBE_URL)) {
-//     chrome.scripting.executeScript({
-//       target: { tabId: tabId },
-//       func: hideYouTubeShorts
-//     });
-//   }
-// });
+// ========================
+// PICTURE-IN-PICTURE AUTO-ENABLE
+// Automatically enables Picture-in-Picture mode when switching away from a tab with playing video
+// Re-enables normal playback when returning to the tab
+// ========================
 
-function hideYouTubeShorts() {
-  console.log('🚫 Hiding YouTube Shorts');
-  
-  if (window.hasShortsHider) return;
-  window.hasShortsHider = true;
+// Track which tabs have videos in PIP mode
+let pipTabs = new Map();
 
-  function hideShorts() {
-    // Hide Shorts shelf on homepage
-    const shortsShelf = document.querySelector('ytd-reel-shelf-renderer');
-    if (shortsShelf) {
-      shortsShelf.style.display = 'none';
-      console.log('Hidden Shorts shelf');
-    }
+// Listen for tab activation changes
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    // Get all tabs in the current window
+    const tabs = await chrome.tabs.query({ windowId: activeInfo.windowId });
+    
+    for (const tab of tabs) {
+      // Skip special URLs
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+        continue;
+      }
 
-    // Hide individual short videos
-    const shortVideos = document.querySelectorAll('ytd-rich-item-renderer');
-    shortVideos.forEach(video => {
-      const thumbnail = video.querySelector('yt-thumbnail-view-model');
-      if (thumbnail) {
-        const overlays = thumbnail.querySelectorAll('.ytThumbnailBadgeViewModelHost');
-        overlays.forEach(overlay => {
-          const badgeText = overlay.textContent.trim();
-          // Shorts don't have time badges like "10:55"
-          if (!badgeText.includes(':')) {
-            video.style.display = 'none';
-          }
+      if (tab.id === activeInfo.tabId) {
+        // User switched TO this tab - exit PIP if it was active
+        if (pipTabs.has(tab.id)) {
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: exitPictureInPicture
+          }).catch(err => console.log('Could not exit PIP:', err.message));
+          pipTabs.delete(tab.id);
+        }
+      } else {
+        // User switched AWAY from this tab - enter PIP if video is playing
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: enterPictureInPicture
+        }).then(() => {
+          pipTabs.set(tab.id, true);
+        }).catch(err => {
+          // Tab might not support script injection or no video playing
+          console.log('Could not enable PIP for tab', tab.id, ':', err.message);
         });
       }
-    });
-
-    // Hide Shorts in sidebar
-    const sidebarShorts = document.querySelectorAll('ytd-guide-entry-renderer');
-    sidebarShorts.forEach(entry => {
-      if (entry.textContent.includes('Shorts')) {
-        entry.style.display = 'none';
-      }
-    });
+    }
+  } catch (error) {
+    console.error('Error handling tab activation:', error);
   }
+});
 
-  // Run initially
-  setTimeout(hideShorts, 1000);
+/**
+ * Function injected to enter Picture-in-Picture mode
+ * Finds playing videos and enables PIP
+ */
+function enterPictureInPicture() {
+  try {
+    // Find all video elements
+    const videos = document.querySelectorAll('video');
+    
+    for (const video of videos) {
+      // Check if video is playing
+      if (!video.paused && !video.ended && video.readyState > 2) {
+        // Check if PIP is supported and not already active
+        if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+          video.requestPictureInPicture()
+            .then(() => {
+              console.log('Picture-in-Picture enabled');
+            })
+            .catch(err => {
+              console.log('PIP request failed:', err.message);
+            });
+          break; // Only enable PIP for first playing video
+        }
+      }
+    }
+  } catch (error) {
+    console.log('PIP error:', error.message);
+  }
+}
 
-  // Watch for changes
-  const observer = new MutationObserver(hideShorts);
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+/**
+ * Function injected to exit Picture-in-Picture mode
+ * Returns video to normal playback in the tab
+ */
+function exitPictureInPicture() {
+  try {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture()
+        .then(() => {
+          console.log('Exited Picture-in-Picture');
+        })
+        .catch(err => {
+          console.log('Exit PIP failed:', err.message);
+        });
+    }
+  } catch (error) {
+    console.log('Exit PIP error:', error.message);
+  }
 }
 
 export {};
