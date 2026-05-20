@@ -133,17 +133,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // YOUTUBE BLOCKER
 // Block YouTube tabs automatically
 // ========================
-// const YOUTUBE_URL_PATTERN = "youtube.com";
+const YOUTUBE_URL_PATTERN = "youtube.com";
 
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//   if (changeInfo.status === 'complete' && tab.url) {
-//     if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
-//       chrome.tabs.remove(tabId, () => {
-//         console.log("YouTube blocked and tab closed.");
-//       });
-//     }
-//   }
-// });
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
+      chrome.tabs.remove(tabId, () => {
+        console.log("YouTube blocked and tab closed.");
+      });
+    }
+  }
+});
 
 // ========================
 // PW.LIVE HIDE TIMESTAMPS
@@ -174,7 +174,6 @@ const handleHideTimeStamps = () => {
 // ========================
 // EXCALIDRAW AUTO-SAVE
 // Automatically saves Excalidraw drawings after idle period
-// Triggers Ctrl+S after user stops drawing/interacting
 // ========================
 const EXCALIDRAW_URL_PATTERN = "excalidraw.com";
 
@@ -187,28 +186,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-/**
- * Auto-save function for Excalidraw
- * Monitors user activity and triggers Ctrl+S after idle period
- * Configuration:
- * - IDLE_TIME_MS: Time to wait after last activity before saving (default: 2000ms / 2 seconds)
- * - MIN_TIME_BETWEEN_SAVES: Minimum interval between consecutive saves (default: 10000ms / 10 seconds)
- * - ENABLE_VISUAL_INDICATOR: Show visual notification when saving (default: true)
- */
 function excalidrawAutoSave() {
-  // Prevent double initialization
   if (window.hasExcalidrawAutoSave) return;
   window.hasExcalidrawAutoSave = true;
 
   console.log('Excalidraw Auto-Save Active');
 
-  // ===== CONFIGURATION =====
   const TARGET_ORIGIN = 'https://excalidraw.com';
-  const IDLE_TIME_MS = 2000; // 2 seconds - Quick save
-  const MIN_TIME_BETWEEN_SAVES = 10000; // Minimum 10 seconds between saves
-  const ENABLE_VISUAL_INDICATOR = true; // Show save notification on screen
+  const IDLE_TIME_MS = 2000;
+  const MIN_TIME_BETWEEN_SAVES = 10000;
+  const ENABLE_VISUAL_INDICATOR = true;
 
-  // ===== SCRIPT =====
   if (window.location.origin === TARGET_ORIGIN) {
     console.log('Auto-save script loaded');
     console.log('Idle timeout:', IDLE_TIME_MS / 1000, 'seconds');
@@ -217,7 +205,6 @@ function excalidrawAutoSave() {
     let lastSaveTime = Date.now();
     let saveIndicator = null;
 
-    // Create visual save indicator
     if (ENABLE_VISUAL_INDICATOR) {
       saveIndicator = document.createElement('div');
       saveIndicator.style.cssText = `
@@ -241,7 +228,6 @@ function excalidrawAutoSave() {
       document.body.appendChild(saveIndicator);
     }
 
-    // Show save notification
     function showSaveNotification() {
       if (saveIndicator) {
         saveIndicator.style.opacity = '1';
@@ -251,7 +237,6 @@ function excalidrawAutoSave() {
       }
     }
 
-    // Trigger Ctrl+S
     function triggerCtrlS() {
       const now = Date.now();
       const timeSinceLastSave = now - lastSaveTime;
@@ -280,20 +265,17 @@ function excalidrawAutoSave() {
       }
 
       lastSaveTime = now;
-      // showSaveNotification();
+      showSaveNotification();
       console.log('Saved at', new Date().toLocaleTimeString());
     }
 
-    // Reset idle timer
     function resetIdleTimer() {
       if (idleTimer) {
         clearTimeout(idleTimer);
       }
-
       idleTimer = setTimeout(triggerCtrlS, IDLE_TIME_MS);
     }
 
-    // Activity events
     const activityEvents = [
       'mousedown',
       'mousemove',
@@ -305,115 +287,299 @@ function excalidrawAutoSave() {
       'wheel'
     ];
 
-    // Attach listeners
     activityEvents.forEach(eventType => {
       document.addEventListener(eventType, resetIdleTimer, { passive: true });
     });
 
     console.log('Ready! Draw and stop to auto-save.');
     resetIdleTimer();
-
-  } else {
-    console.log('Not on target website');
   }
 }
 
 // ========================
-// PICTURE-IN-PICTURE AUTO-ENABLE
-// Automatically enables Picture-in-Picture mode when switching away from a tab with playing video
-// Re-enables normal playback when returning to the tab
+// SMART PICTURE-IN-PICTURE MANAGER
+// Uses Chrome Tab API to detect media playback
+// Automatically manages PIP based on tab audible state
+// No dependency on video elements
 // ========================
 
-// Track which tabs have videos in PIP mode
-let pipTabs = new Map();
+// Store tabs with active media and their PIP state
+const mediaPlayingTabs = new Map();
+const pipActiveTabs = new Set();
 
-// Listen for tab activation changes
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  try {
-    // Get all tabs in the current window
-    const tabs = await chrome.tabs.query({ windowId: activeInfo.windowId });
-    
-    for (const tab of tabs) {
-      // Skip special URLs
-      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
-        continue;
-      }
+/**
+ * Check if tab has audible media playing
+ * Uses Chrome's built-in audible property
+ */
+function isTabPlayingMedia(tab) {
+  return tab.audible === true;
+}
 
-      if (tab.id === activeInfo.tabId) {
-        // User switched TO this tab - exit PIP if it was active
-        if (pipTabs.has(tab.id)) {
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: exitPictureInPicture
-          }).catch(err => console.log('Could not exit PIP:', err.message));
-          pipTabs.delete(tab.id);
-        }
-      } else {
-        // User switched AWAY from this tab - enter PIP if video is playing
-        chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: enterPictureInPicture
-        }).then(() => {
-          pipTabs.set(tab.id, true);
-        }).catch(err => {
-          // Tab might not support script injection or no video playing
-          console.log('Could not enable PIP for tab', tab.id, ':', err.message);
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Error handling tab activation:', error);
+/**
+ * Monitor all tabs for media playback state changes
+ */
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // Ignore non-media related changes
+  if (!('audible' in changeInfo)) {
+    return;
+  }
+
+  const isPlayingNow = isTabPlayingMedia(tab);
+  const wasPlaying = mediaPlayingTabs.has(tabId);
+
+  console.log(`Tab ${tabId} media state changed:`, {
+    url: tab.url,
+    audible: tab.audible,
+    active: tab.active,
+    isPlayingNow,
+    wasPlaying
+  });
+
+  // Update tracking
+  if (isPlayingNow) {
+    mediaPlayingTabs.set(tabId, {
+      url: tab.url,
+      title: tab.title,
+      timestamp: Date.now()
+    });
+  } else {
+    mediaPlayingTabs.delete(tabId);
+  }
+
+  // If tab is not active and media just started or is playing
+  if (isPlayingNow && !tab.active) {
+    console.log(`Media playing in background tab ${tabId}, attempting PIP`);
+    await attemptPIP(tabId);
+  }
+
+  // If tab became inactive while playing
+  if (isPlayingNow && !tab.active && !pipActiveTabs.has(tabId)) {
+    console.log(`Tab ${tabId} is inactive with media, attempting PIP`);
+    await attemptPIP(tabId);
   }
 });
 
 /**
- * Function injected to enter Picture-in-Picture mode
- * Finds playing videos and enables PIP
+ * Monitor tab activation to manage PIP
  */
-function enterPictureInPicture() {
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  const tabId = activeInfo.tabId;
+
   try {
-    // Find all video elements
-    const videos = document.querySelectorAll('video');
-    
-    for (const video of videos) {
-      // Check if video is playing
-      if (!video.paused && !video.ended && video.readyState > 2) {
-        // Check if PIP is supported and not already active
-        if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
-          video.requestPictureInPicture()
-            .then(() => {
-              console.log('Picture-in-Picture enabled');
-            })
-            .catch(err => {
-              console.log('PIP request failed:', err.message);
-            });
-          break; // Only enable PIP for first playing video
-        }
+    const [activeTab, allTabs] = await Promise.all([
+      chrome.tabs.get(tabId),
+      chrome.tabs.query({ windowId: activeInfo.windowId })
+    ]);
+
+    console.log(`Tab activated: ${tabId}`, {
+      url: activeTab.url,
+      audible: activeTab.audible
+    });
+
+    // Exit PIP for the now-active tab
+    if (pipActiveTabs.has(tabId)) {
+      console.log(`Exiting PIP for newly active tab ${tabId}`);
+      await exitPIP(tabId);
+      pipActiveTabs.delete(tabId);
+    }
+
+    // Check all other tabs for playing media
+    for (const tab of allTabs) {
+      if (tab.id === tabId) continue; // Skip the active tab
+      
+      if (isTabPlayingMedia(tab)) {
+        console.log(`Found playing media in background tab ${tab.id}`);
+        await attemptPIP(tab.id);
       }
     }
   } catch (error) {
-    console.log('PIP error:', error.message);
+    console.error('Error in tab activation handler:', error);
+  }
+});
+
+/**
+ * Clean up when tabs are closed
+ */
+chrome.tabs.onRemoved.addListener((tabId) => {
+  mediaPlayingTabs.delete(tabId);
+  pipActiveTabs.delete(tabId);
+  console.log(`Tab ${tabId} removed, cleaned up tracking`);
+});
+
+/**
+ * Attempt to enable PIP for a tab
+ */
+async function attemptPIP(tabId) {
+  try {
+    // Don't attempt if already in PIP
+    if (pipActiveTabs.has(tabId)) {
+      console.log(`Tab ${tabId} already has PIP active`);
+      return;
+    }
+
+    const tab = await chrome.tabs.get(tabId);
+
+    // Skip special URLs
+    if (!tab.url || 
+        tab.url.startsWith('chrome://') || 
+        tab.url.startsWith('chrome-extension://') ||
+        tab.url.startsWith('about:')) {
+      console.log(`Skipping PIP for special URL: ${tab.url}`);
+      return;
+    }
+
+    console.log(`Injecting PIP script into tab ${tabId}`);
+
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: enablePIPScript
+    });
+
+    pipActiveTabs.add(tabId);
+    console.log(`PIP enabled for tab ${tabId}`);
+
+  } catch (error) {
+    console.log(`Could not enable PIP for tab ${tabId}:`, error.message);
   }
 }
 
 /**
- * Function injected to exit Picture-in-Picture mode
- * Returns video to normal playback in the tab
+ * Exit PIP for a tab
  */
-function exitPictureInPicture() {
+async function exitPIP(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: disablePIPScript
+    });
+    console.log(`PIP disabled for tab ${tabId}`);
+  } catch (error) {
+    console.log(`Could not disable PIP for tab ${tabId}:`, error.message);
+  }
+}
+
+/**
+ * Script injected to enable PIP
+ * Finds ANY video element and enables PIP regardless of state
+ */
+function enablePIPScript() {
+  console.log('PIP enable script running');
+
+  try {
+    // Check if PIP is supported
+    if (!document.pictureInPictureEnabled) {
+      console.log('PIP not supported');
+      return;
+    }
+
+    // Skip if already in PIP
+    if (document.pictureInPictureElement) {
+      console.log('PIP already active');
+      return;
+    }
+
+    // Find all video elements
+    const videos = document.querySelectorAll('video');
+    console.log(`Found ${videos.length} video elements`);
+
+    if (videos.length === 0) {
+      console.log('No video elements found');
+      return;
+    }
+
+    // Try each video until one succeeds
+    let pipEnabled = false;
+    
+    for (let i = 0; i < videos.length; i++) {
+      const video = videos[i];
+      
+      console.log(`Attempting PIP on video ${i}:`, {
+        paused: video.paused,
+        ended: video.ended,
+        readyState: video.readyState,
+        duration: video.duration,
+        currentTime: video.currentTime
+      });
+
+      // Try to enable PIP
+      video.requestPictureInPicture()
+        .then(() => {
+          console.log(`PIP enabled successfully on video ${i}`);
+          pipEnabled = true;
+        })
+        .catch(err => {
+          console.log(`PIP failed on video ${i}:`, err.message);
+        });
+
+      // Only try first video
+      if (pipEnabled) break;
+    }
+
+    // If first attempt fails, try with user gesture simulation
+    if (!pipEnabled) {
+      console.log('Attempting PIP with gesture simulation');
+      const firstVideo = videos[0];
+      
+      // Add click listener to capture next user interaction
+      const clickHandler = () => {
+        firstVideo.requestPictureInPicture()
+          .then(() => console.log('PIP enabled via click'))
+          .catch(err => console.log('PIP via click failed:', err.message));
+        document.removeEventListener('click', clickHandler, true);
+      };
+      
+      document.addEventListener('click', clickHandler, true);
+      console.log('Waiting for user click to enable PIP');
+    }
+
+  } catch (error) {
+    console.log('PIP script error:', error.message);
+  }
+}
+
+/**
+ * Script injected to disable PIP
+ */
+function disablePIPScript() {
   try {
     if (document.pictureInPictureElement) {
       document.exitPictureInPicture()
-        .then(() => {
-          console.log('Exited Picture-in-Picture');
-        })
-        .catch(err => {
-          console.log('Exit PIP failed:', err.message);
-        });
+        .then(() => console.log('PIP exited'))
+        .catch(err => console.log('PIP exit failed:', err.message));
+    } else {
+      console.log('No active PIP to exit');
     }
   } catch (error) {
-    console.log('Exit PIP error:', error.message);
+    console.log('PIP exit error:', error.message);
   }
 }
+
+/**
+ * Monitor window focus changes
+ * Useful for detecting when user switches to another window entirely
+ */
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) {
+    console.log('No window focused');
+    return;
+  }
+
+  try {
+    const tabs = await chrome.tabs.query({ windowId: windowId, active: true });
+    const activeTab = tabs[0];
+
+    if (activeTab) {
+      console.log('Window focused, active tab:', {
+        tabId: activeTab.id,
+        url: activeTab.url,
+        audible: activeTab.audible
+      });
+    }
+  } catch (error) {
+    console.log('Error in window focus handler:', error);
+  }
+});
+
+console.log('Smart PIP Manager initialized - monitoring media playback across all tabs');
 
 export {};
