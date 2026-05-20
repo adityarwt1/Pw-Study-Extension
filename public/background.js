@@ -265,7 +265,7 @@ function excalidrawAutoSave() {
       }
 
       lastSaveTime = now;
-      showSaveNotification();
+      // showSaveNotification();
       console.log('Saved at', new Date().toLocaleTimeString());
     }
 
