@@ -133,17 +133,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // YOUTUBE BLOCKER
 // Block YouTube tabs automatically
 // ========================
-const YOUTUBE_URL_PATTERN = "youtube.com";
+// const YOUTUBE_URL_PATTERN = "youtube.com";
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
-      chrome.tabs.remove(tabId, () => {
-        console.log("YouTube blocked and tab closed.");
-      });
-    }
-  }
-});
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete' && tab.url) {
+//     if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
+//       chrome.tabs.remove(tabId, () => {
+//         console.log("YouTube blocked and tab closed.");
+//       });
+//     }
+//   }
+// });
 
 // ========================
 // PW.LIVE HIDE TIMESTAMPS

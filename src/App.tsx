@@ -19,6 +19,10 @@ const MainPlayGround = () => {
       <OpenRecentLecture/>
       <DarkThemScriptForPw/>
       <WebsiteOpener name="Exam Goal" url="https://room.examgoal.com/"/>
+      <WebsiteOpener name="Manjil Physical Chemistery" url="https://www.pw.live/watch/?categoryId=68d4e946703add795fe1d8e3&widgetId=6899cf046c4844a03edc43f5&vType=OTT&type=penpencilvdo&childId=69535f62c17f7ff7ac3b41ff&playlistId=69275e714f137fb50d33a5e2"/>
+      <WebsiteOpener name="Manjil Physical Chemistery" url="https://www.pw.live/watch/?categoryId=68d4e946703add795fe1d8e3&widgetId=6899cf046c4844a03edc43f5&vType=OTT&type=penpencilvdo&childId=69535f62c17f7ff7ac3b41ff&playlistId=69275e714f137fb50d33a5e2"/>
+      <WebsiteOpener name="Manjil 2025" url="https://www.pw.live/study-v2/batches/671f5ea96059088394262c30/batch-overview"/>
+      <WebsiteOpener name="PW Mentorshipt" url="https://www.pw.live/study-v2/mentorship/chat/6779345c20fa0756e4a7fd08"/>
     <HideStamps/>
       {/* <MultiplicationTables/> */}
       <TimeTravel/>
