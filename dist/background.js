@@ -133,17 +133,17 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // YOUTUBE BLOCKER
 // Block YouTube tabs automatically
 // ========================
-const YOUTUBE_URL_PATTERN = "youtube.com";
+// const YOUTUBE_URL_PATTERN = "youtube.com";
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
-      chrome.tabs.remove(tabId, () => {
-        console.log("YouTube blocked and tab closed.");
-      });
-    }
-  }
-});
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+//   if (changeInfo.status === 'complete' && tab.url) {
+//     if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
+//       chrome.tabs.remove(tabId, () => {
+//         console.log("YouTube blocked and tab closed.");
+//       });
+//     }
+//   }
+// });
 
 // ========================
 // PW.LIVE HIDE TIMESTAMPS
@@ -265,7 +265,7 @@ function excalidrawAutoSave() {
       }
 
       lastSaveTime = now;
-      showSaveNotification();
+      // showSaveNotification();
       console.log('Saved at', new Date().toLocaleTimeString());
     }
 
@@ -304,282 +304,282 @@ function excalidrawAutoSave() {
 // ========================
 
 // Store tabs with active media and their PIP state
-const mediaPlayingTabs = new Map();
-const pipActiveTabs = new Set();
+// const mediaPlayingTabs = new Map();
+// const pipActiveTabs = new Set();
 
-/**
- * Check if tab has audible media playing
- * Uses Chrome's built-in audible property
- */
-function isTabPlayingMedia(tab) {
-  return tab.audible === true;
-}
+// /**
+//  * Check if tab has audible media playing
+//  * Uses Chrome's built-in audible property
+//  */
+// function isTabPlayingMedia(tab) {
+//   return tab.audible === true;
+// }
 
-/**
- * Monitor all tabs for media playback state changes
- */
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // Ignore non-media related changes
-  if (!('audible' in changeInfo)) {
-    return;
-  }
+// /**
+//  * Monitor all tabs for media playback state changes
+//  */
+// chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+//   // Ignore non-media related changes
+//   if (!('audible' in changeInfo)) {
+//     return;
+//   }
 
-  const isPlayingNow = isTabPlayingMedia(tab);
-  const wasPlaying = mediaPlayingTabs.has(tabId);
+//   const isPlayingNow = isTabPlayingMedia(tab);
+//   const wasPlaying = mediaPlayingTabs.has(tabId);
 
-  console.log(`Tab ${tabId} media state changed:`, {
-    url: tab.url,
-    audible: tab.audible,
-    active: tab.active,
-    isPlayingNow,
-    wasPlaying
-  });
+//   console.log(`Tab ${tabId} media state changed:`, {
+//     url: tab.url,
+//     audible: tab.audible,
+//     active: tab.active,
+//     isPlayingNow,
+//     wasPlaying
+//   });
 
-  // Update tracking
-  if (isPlayingNow) {
-    mediaPlayingTabs.set(tabId, {
-      url: tab.url,
-      title: tab.title,
-      timestamp: Date.now()
-    });
-  } else {
-    mediaPlayingTabs.delete(tabId);
-  }
+//   // Update tracking
+//   if (isPlayingNow) {
+//     mediaPlayingTabs.set(tabId, {
+//       url: tab.url,
+//       title: tab.title,
+//       timestamp: Date.now()
+//     });
+//   } else {
+//     mediaPlayingTabs.delete(tabId);
+//   }
 
-  // If tab is not active and media just started or is playing
-  if (isPlayingNow && !tab.active) {
-    console.log(`Media playing in background tab ${tabId}, attempting PIP`);
-    await attemptPIP(tabId);
-  }
+//   // If tab is not active and media just started or is playing
+//   if (isPlayingNow && !tab.active) {
+//     console.log(`Media playing in background tab ${tabId}, attempting PIP`);
+//     await attemptPIP(tabId);
+//   }
 
-  // If tab became inactive while playing
-  if (isPlayingNow && !tab.active && !pipActiveTabs.has(tabId)) {
-    console.log(`Tab ${tabId} is inactive with media, attempting PIP`);
-    await attemptPIP(tabId);
-  }
-});
+//   // If tab became inactive while playing
+//   if (isPlayingNow && !tab.active && !pipActiveTabs.has(tabId)) {
+//     console.log(`Tab ${tabId} is inactive with media, attempting PIP`);
+//     await attemptPIP(tabId);
+//   }
+// });
 
 /**
  * Monitor tab activation to manage PIP
- */
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  const tabId = activeInfo.tabId;
+//  */
+// chrome.tabs.onActivated.addListener(async (activeInfo) => {
+//   const tabId = activeInfo.tabId;
 
-  try {
-    const [activeTab, allTabs] = await Promise.all([
-      chrome.tabs.get(tabId),
-      chrome.tabs.query({ windowId: activeInfo.windowId })
-    ]);
+//   try {
+//     const [activeTab, allTabs] = await Promise.all([
+//       chrome.tabs.get(tabId),
+//       chrome.tabs.query({ windowId: activeInfo.windowId })
+//     ]);
 
-    console.log(`Tab activated: ${tabId}`, {
-      url: activeTab.url,
-      audible: activeTab.audible
-    });
+//     console.log(`Tab activated: ${tabId}`, {
+//       url: activeTab.url,
+//       audible: activeTab.audible
+//     });
 
-    // Exit PIP for the now-active tab
-    if (pipActiveTabs.has(tabId)) {
-      console.log(`Exiting PIP for newly active tab ${tabId}`);
-      await exitPIP(tabId);
-      pipActiveTabs.delete(tabId);
-    }
+//     // Exit PIP for the now-active tab
+//     if (pipActiveTabs.has(tabId)) {
+//       console.log(`Exiting PIP for newly active tab ${tabId}`);
+//       await exitPIP(tabId);
+//       pipActiveTabs.delete(tabId);
+//     }
 
-    // Check all other tabs for playing media
-    for (const tab of allTabs) {
-      if (tab.id === tabId) continue; // Skip the active tab
+//     // Check all other tabs for playing media
+//     for (const tab of allTabs) {
+//       if (tab.id === tabId) continue; // Skip the active tab
       
-      if (isTabPlayingMedia(tab)) {
-        console.log(`Found playing media in background tab ${tab.id}`);
-        await attemptPIP(tab.id);
-      }
-    }
-  } catch (error) {
-    console.error('Error in tab activation handler:', error);
-  }
-});
+//       if (isTabPlayingMedia(tab)) {
+//         console.log(`Found playing media in background tab ${tab.id}`);
+//         await attemptPIP(tab.id);
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Error in tab activation handler:', error);
+//   }
+// });
 
-/**
- * Clean up when tabs are closed
- */
-chrome.tabs.onRemoved.addListener((tabId) => {
-  mediaPlayingTabs.delete(tabId);
-  pipActiveTabs.delete(tabId);
-  console.log(`Tab ${tabId} removed, cleaned up tracking`);
-});
+// /**
+//  * Clean up when tabs are closed
+//  */
+// chrome.tabs.onRemoved.addListener((tabId) => {
+//   mediaPlayingTabs.delete(tabId);
+//   pipActiveTabs.delete(tabId);
+//   console.log(`Tab ${tabId} removed, cleaned up tracking`);
+// });
 
-/**
- * Attempt to enable PIP for a tab
- */
-async function attemptPIP(tabId) {
-  try {
-    // Don't attempt if already in PIP
-    if (pipActiveTabs.has(tabId)) {
-      console.log(`Tab ${tabId} already has PIP active`);
-      return;
-    }
+// /**
+//  * Attempt to enable PIP for a tab
+//  */
+// async function attemptPIP(tabId) {
+//   try {
+//     // Don't attempt if already in PIP
+//     if (pipActiveTabs.has(tabId)) {
+//       console.log(`Tab ${tabId} already has PIP active`);
+//       return;
+//     }
 
-    const tab = await chrome.tabs.get(tabId);
+//     const tab = await chrome.tabs.get(tabId);
 
-    // Skip special URLs
-    if (!tab.url || 
-        tab.url.startsWith('chrome://') || 
-        tab.url.startsWith('chrome-extension://') ||
-        tab.url.startsWith('about:')) {
-      console.log(`Skipping PIP for special URL: ${tab.url}`);
-      return;
-    }
+//     // Skip special URLs
+//     if (!tab.url || 
+//         tab.url.startsWith('chrome://') || 
+//         tab.url.startsWith('chrome-extension://') ||
+//         tab.url.startsWith('about:')) {
+//       console.log(`Skipping PIP for special URL: ${tab.url}`);
+//       return;
+//     }
 
-    console.log(`Injecting PIP script into tab ${tabId}`);
+//     console.log(`Injecting PIP script into tab ${tabId}`);
 
-    await chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: enablePIPScript
-    });
+//     await chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       func: enablePIPScript
+//     });
 
-    pipActiveTabs.add(tabId);
-    console.log(`PIP enabled for tab ${tabId}`);
+//     pipActiveTabs.add(tabId);
+//     console.log(`PIP enabled for tab ${tabId}`);
 
-  } catch (error) {
-    console.log(`Could not enable PIP for tab ${tabId}:`, error.message);
-  }
-}
+//   } catch (error) {
+//     console.log(`Could not enable PIP for tab ${tabId}:`, error.message);
+//   }
+// }
 
-/**
- * Exit PIP for a tab
- */
-async function exitPIP(tabId) {
-  try {
-    await chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: disablePIPScript
-    });
-    console.log(`PIP disabled for tab ${tabId}`);
-  } catch (error) {
-    console.log(`Could not disable PIP for tab ${tabId}:`, error.message);
-  }
-}
+// /**
+//  * Exit PIP for a tab
+//  */
+// async function exitPIP(tabId) {
+//   try {
+//     await chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       func: disablePIPScript
+//     });
+//     console.log(`PIP disabled for tab ${tabId}`);
+//   } catch (error) {
+//     console.log(`Could not disable PIP for tab ${tabId}:`, error.message);
+//   }
+// }
 
-/**
- * Script injected to enable PIP
- * Finds ANY video element and enables PIP regardless of state
- */
-function enablePIPScript() {
-  console.log('PIP enable script running');
+// /**
+//  * Script injected to enable PIP
+//  * Finds ANY video element and enables PIP regardless of state
+//  */
+// function enablePIPScript() {
+//   console.log('PIP enable script running');
 
-  try {
-    // Check if PIP is supported
-    if (!document.pictureInPictureEnabled) {
-      console.log('PIP not supported');
-      return;
-    }
+//   try {
+//     // Check if PIP is supported
+//     if (!document.pictureInPictureEnabled) {
+//       console.log('PIP not supported');
+//       return;
+//     }
 
-    // Skip if already in PIP
-    if (document.pictureInPictureElement) {
-      console.log('PIP already active');
-      return;
-    }
+//     // Skip if already in PIP
+//     if (document.pictureInPictureElement) {
+//       console.log('PIP already active');
+//       return;
+//     }
 
-    // Find all video elements
-    const videos = document.querySelectorAll('video');
-    console.log(`Found ${videos.length} video elements`);
+//     // Find all video elements
+//     const videos = document.querySelectorAll('video');
+//     console.log(`Found ${videos.length} video elements`);
 
-    if (videos.length === 0) {
-      console.log('No video elements found');
-      return;
-    }
+//     if (videos.length === 0) {
+//       console.log('No video elements found');
+//       return;
+//     }
 
-    // Try each video until one succeeds
-    let pipEnabled = false;
+//     // Try each video until one succeeds
+//     let pipEnabled = false;
     
-    for (let i = 0; i < videos.length; i++) {
-      const video = videos[i];
+//     for (let i = 0; i < videos.length; i++) {
+//       const video = videos[i];
       
-      console.log(`Attempting PIP on video ${i}:`, {
-        paused: video.paused,
-        ended: video.ended,
-        readyState: video.readyState,
-        duration: video.duration,
-        currentTime: video.currentTime
-      });
+//       console.log(`Attempting PIP on video ${i}:`, {
+//         paused: video.paused,
+//         ended: video.ended,
+//         readyState: video.readyState,
+//         duration: video.duration,
+//         currentTime: video.currentTime
+//       });
 
-      // Try to enable PIP
-      video.requestPictureInPicture()
-        .then(() => {
-          console.log(`PIP enabled successfully on video ${i}`);
-          pipEnabled = true;
-        })
-        .catch(err => {
-          console.log(`PIP failed on video ${i}:`, err.message);
-        });
+//       // Try to enable PIP
+//       video.requestPictureInPicture()
+//         .then(() => {
+//           console.log(`PIP enabled successfully on video ${i}`);
+//           pipEnabled = true;
+//         })
+//         .catch(err => {
+//           console.log(`PIP failed on video ${i}:`, err.message);
+//         });
 
-      // Only try first video
-      if (pipEnabled) break;
-    }
+//       // Only try first video
+//       if (pipEnabled) break;
+//     }
 
-    // If first attempt fails, try with user gesture simulation
-    if (!pipEnabled) {
-      console.log('Attempting PIP with gesture simulation');
-      const firstVideo = videos[0];
+//     // If first attempt fails, try with user gesture simulation
+//     if (!pipEnabled) {
+//       console.log('Attempting PIP with gesture simulation');
+//       const firstVideo = videos[0];
       
-      // Add click listener to capture next user interaction
-      const clickHandler = () => {
-        firstVideo.requestPictureInPicture()
-          .then(() => console.log('PIP enabled via click'))
-          .catch(err => console.log('PIP via click failed:', err.message));
-        document.removeEventListener('click', clickHandler, true);
-      };
+//       // Add click listener to capture next user interaction
+//       const clickHandler = () => {
+//         firstVideo.requestPictureInPicture()
+//           .then(() => console.log('PIP enabled via click'))
+//           .catch(err => console.log('PIP via click failed:', err.message));
+//         document.removeEventListener('click', clickHandler, true);
+//       };
       
-      document.addEventListener('click', clickHandler, true);
-      console.log('Waiting for user click to enable PIP');
-    }
+//       document.addEventListener('click', clickHandler, true);
+//       console.log('Waiting for user click to enable PIP');
+//     }
 
-  } catch (error) {
-    console.log('PIP script error:', error.message);
-  }
-}
+//   } catch (error) {
+//     console.log('PIP script error:', error.message);
+//   }
+// }
 
 /**
  * Script injected to disable PIP
  */
-function disablePIPScript() {
-  try {
-    if (document.pictureInPictureElement) {
-      document.exitPictureInPicture()
-        .then(() => console.log('PIP exited'))
-        .catch(err => console.log('PIP exit failed:', err.message));
-    } else {
-      console.log('No active PIP to exit');
-    }
-  } catch (error) {
-    console.log('PIP exit error:', error.message);
-  }
-}
+// function disablePIPScript() {
+//   try {
+//     if (document.pictureInPictureElement) {
+//       document.exitPictureInPicture()
+//         .then(() => console.log('PIP exited'))
+//         .catch(err => console.log('PIP exit failed:', err.message));
+//     } else {
+//       console.log('No active PIP to exit');
+//     }
+//   } catch (error) {
+//     console.log('PIP exit error:', error.message);
+//   }
+// }
 
 /**
  * Monitor window focus changes
  * Useful for detecting when user switches to another window entirely
  */
-chrome.windows.onFocusChanged.addListener(async (windowId) => {
-  if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    console.log('No window focused');
-    return;
-  }
+// chrome.windows.onFocusChanged.addListener(async (windowId) => {
+//   if (windowId === chrome.windows.WINDOW_ID_NONE) {
+//     console.log('No window focused');
+//     return;
+//   }
 
-  try {
-    const tabs = await chrome.tabs.query({ windowId: windowId, active: true });
-    const activeTab = tabs[0];
+//   try {
+//     const tabs = await chrome.tabs.query({ windowId: windowId, active: true });
+//     const activeTab = tabs[0];
 
-    if (activeTab) {
-      console.log('Window focused, active tab:', {
-        tabId: activeTab.id,
-        url: activeTab.url,
-        audible: activeTab.audible
-      });
-    }
-  } catch (error) {
-    console.log('Error in window focus handler:', error);
-  }
-});
+//     if (activeTab) {
+//       console.log('Window focused, active tab:', {
+//         tabId: activeTab.id,
+//         url: activeTab.url,
+//         audible: activeTab.audible
+//       });
+//     }
+//   } catch (error) {
+//     console.log('Error in window focus handler:', error);
+//   }
+// });
 
-console.log('Smart PIP Manager initialized - monitoring media playback across all tabs');
+// console.log('Smart PIP Manager initialized - monitoring media playback across all tabs');
 
 export {};
