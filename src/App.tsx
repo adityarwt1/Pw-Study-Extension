@@ -7,6 +7,7 @@ import WebsiteOpener from "./components/WebsiteOpener";
 import HideStamps from "./components/HideTimeStamps";
 import TimeTravel from "./components/TimeTravel";
 import EnabledRightClick from "./components/EnabledRightClick";
+import ProvideToken from "./components/ProivideToken";
 // import MultiplicationTables from "./components/MulitipleTable";
 
 const MainPlayGround = () => {
@@ -65,7 +66,7 @@ const MainPlayGround = () => {
       {/* <MultiplicationTables/> */}
 
       <TimeTravel />
-
+      <ProvideToken/>
       <EnabledRightClick />
     </div>
   );
