@@ -146,29 +146,114 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // });
 
 // ========================
-// PW.LIVE HIDE TIMESTAMPS
-// Hides the current time display on PW.live
+// PW.LIVE AUTO-FEATURES
+// Auto-runs: hide timestamps, hide chat, enable right-click, picture-in-picture
 // ========================
 const PW_URL_PATTERN = "pw.live";
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url && tab.url.includes(PW_URL_PATTERN)) {
+    // Execute all features automatically
     chrome.scripting.executeScript({
       target: { tabId: tabId },
-      func: handleHideTimeStamps
+      func: autoRunPWFeatures
     });
   }
 });
 
-// Function injected into PW.live to hide timestamp
-const handleHideTimeStamps = () => {
-  const timeDiv = document.getElementById("current-time-placeholder");
-  if (timeDiv) {
-    timeDiv.style.opacity = 0;
-    console.log('Timestamp hidden successfully');
-  } else {
-    console.log('Timestamp element not found on this page');
-  }
+// Main function that runs all features automatically on PW.live
+const autoRunPWFeatures = () => {
+  // 1. HIDE TIMESTAMPS
+  const handleHideTimeStamps = () => {
+    const timeDiv = document.getElementById("current-time-placeholder");
+    const timePleaseFol = document.querySelector("#progress-placeholder");
+    const vjsElement = document.querySelector(".vjs-progress-holder");
+
+    if (timeDiv) {
+      timeDiv.style.opacity = "0";
+      timeDiv.style.pointerEvents = "none";
+    }
+    if (timePleaseFol) {
+      timePleaseFol.style.opacity = "0";
+      timePleaseFol.style.pointerEvents = "none";
+    }
+    if (vjsElement) {
+      vjsElement.style.opacity = "0";
+      vjsElement.style.pointerEvents = "none";
+    }
+    console.log('✓ Timestamps hidden successfully');
+  };
+
+  // 2. HIDE CHAT
+  const handleHideChat = () => {
+    const chatContainer = document.querySelector("[class*='chat']");
+    const chatSidebar = document.querySelector("[class*='sidebar']");
+    const chatSection = document.querySelector("section[class*='chat']");
+    
+    if (chatContainer) {
+      chatContainer.style.display = "none";
+    }
+    if (chatSidebar && chatSidebar.textContent.includes('Chat')) {
+      chatSidebar.style.display = "none";
+    }
+    if (chatSection) {
+      chatSection.style.display = "none";
+    }
+    console.log('✓ Chat hidden successfully');
+  };
+
+  // 3. ENABLE RIGHT-CLICK
+  const handleEnabledRightClick = () => {
+    document.oncontextmenu = null;
+    document.body.oncontextmenu = null;
+    document.onselectstart = null;
+    document.body.onselectstart = null;
+    document.oncopy = null;
+    document.body.oncopy = null;
+
+    document.addEventListener(
+      "contextmenu",
+      (e) => {
+        e.stopPropagation();
+      },
+      true
+    );
+    console.log('✓ Right-click enabled!');
+  };
+
+  // 4. PICTURE-IN-PICTURE
+  const handlePictureInPicture = () => {
+    const videoElement = document.querySelector("video");
+    if (videoElement && document.pictureInPictureEnabled) {
+      videoElement.requestPictureInPicture().catch((error) => {
+        console.log('PiP not available yet, will try again');
+      });
+    }
+  };
+
+  // Run hide timestamps immediately
+  handleHideTimeStamps();
+
+  // Run hide chat after a small delay
+  setTimeout(() => {
+    handleHideChat();
+  }, 500);
+
+  // Run enable right-click immediately
+  handleEnabledRightClick();
+
+  // Try picture-in-picture after video loads
+  setTimeout(() => {
+    handlePictureInPicture();
+  }, 1000);
+
+  // Re-run every 3 seconds to handle dynamically loaded elements
+  setInterval(() => {
+    handleHideTimeStamps();
+    handleHideChat();
+  }, 3000);
+
+  console.log('All PW.live features activated automatically!');
 };
 
 // ========================
