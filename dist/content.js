@@ -91,13 +91,22 @@ if (window.location.href.includes('pw.live')) {
     console.log('✓ Right-click enabled!');
   };
 
-
+  // 4. PICTURE-IN-PICTURE AUTO-ACTIVATION
+  const enablePictureInPicture = () => {
+    const videoElement = document.querySelector("video");
+    if (videoElement && document.pictureInPictureEnabled) {
+      videoElement.requestPictureInPicture()
+        .then(() => console.log('✓ Picture-in-Picture activated!'))
+        .catch((error) => console.log('PiP request denied or not available'));
+    }
+  };
 
   // Function to run all features
   const initializeFeatures = () => {
     hideTimestamps();
     hideChat();
     enableRightClick();
+    enablePictureInPicture();
   };
 
   // Run immediately
@@ -112,5 +121,21 @@ if (window.location.href.includes('pw.live')) {
 
   console.log('✓ All PW.live features initialized!');
 
-
+  // Keyboard shortcut to toggle Picture-in-Picture (Alt+P)
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && e.key === 'p') {
+      e.preventDefault();
+      const videoElement = document.querySelector("video");
+      if (videoElement) {
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture();
+          console.log('✓ Picture-in-Picture disabled');
+        } else {
+          videoElement.requestPictureInPicture()
+            .then(() => console.log('✓ Picture-in-Picture enabled'))
+            .catch((error) => console.log('PiP request failed'));
+        }
+      }
+    }
+  });
 }

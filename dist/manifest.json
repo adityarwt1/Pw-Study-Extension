@@ -17,6 +17,13 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": ["https://*.pw.live/*", "http://*.pw.live/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
   "permissions": [
     "storage",
     "tabs",
@@ -24,11 +31,7 @@
     "alarms",
     "contextMenus",
     "notifications",
-    "scripting",
-     "tabs",
-    "scripting",
-    "storage",
-    "contextMenus"
+    "scripting"
   ],
   "host_permissions": [
     "https://*/*",
