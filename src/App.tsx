@@ -8,6 +8,7 @@ import HideStamps from "./components/HideTimeStamps";
 import TimeTravel from "./components/TimeTravel";
 import EnabledRightClick from "./components/EnabledRightClick";
 import ProvideToken from "./components/ProivideToken";
+import SlideImageCopier from "./components/SlieImageCopierV2";
 // import MultiplicationTables from "./components/MulitipleTable";
 
 const MainPlayGround = () => {
@@ -68,6 +69,8 @@ const MainPlayGround = () => {
       <TimeTravel />
       <ProvideToken/>
       <EnabledRightClick />
+      {/* <SlideImageCopier /> */}
+      <SlideImageCopier/>
     </div>
   );
 };
