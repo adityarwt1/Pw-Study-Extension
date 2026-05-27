@@ -39,6 +39,12 @@
     "<all_urls>"
   ],
   "commands": {
+    "copy-slide": {
+      "suggested_key": {
+        "default": "Shift+Alt+C"
+      },
+      "description": "Copy current slide to clipboard"
+    },
     "toggle-feature": {
       "suggested_key": {
         "default": "Alt+Shift+Y"

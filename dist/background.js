@@ -121,6 +121,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ========================
+// KEYBOARD COMMANDS
+// ========================
+chrome.commands.onCommand.addListener((command) => {
+  log('info', 'Command triggered:', { command });
+  console.log('[BG] Command triggered:', command);
+  
+  if (command === 'copy-slide') {
+    log('info', 'Copy slide command triggered');
+    console.log('[BG] Copy slide command triggered - getting active tab');
+    
+    // Get the active tab and send message to content script
+    chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+      console.log('[BG] Tabs query result:', tabs);
+      const tab = tabs[0];
+      
+      if (!tab) {
+        console.error('[BG] No active tab found');
+        log('error', 'No active tab found');
+        return;
+      }
+      
+      console.log('[BG] Active tab URL:', tab.url);
+      
+      if (tab?.id && tab.url?.includes('pw.live')) {
+        console.log('[BG] Sending message to tab:', tab.id);
+        chrome.tabs.sendMessage(tab.id, { action: 'copySlideFromShortcut' }).then(() => {
+          console.log('[BG] Message sent successfully');
+          log('info', 'Message sent to content script');
+        }).catch((err) => {
+          console.error('[BG] Failed to send message:', err);
+          log('warn', 'Failed to send message to content script', { error: String(err) });
+        });
+      } else {
+        console.warn('[BG] Not on pw.live page or no tab ID');
+        log('warn', 'Not on pw.live page or no tab ID', { tabId: tab?.id, url: tab?.url });
+      }
+    }).catch((err) => {
+      console.error('[BG] Error querying tabs:', err);
+      log('error', 'Error querying tabs', { error: String(err) });
+    });
+  }
+});
+
+// ========================
 // TAB EVENTS
 // ========================
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
