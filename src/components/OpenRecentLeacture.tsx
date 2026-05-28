@@ -30,14 +30,18 @@ const OpenRecentLecture = () => {
       const url = new URL("https://www.pw.live/watch/");
 
       // Use set() to avoid duplicates
+      url.searchParams.set("batchSlug", lecture.batchDetail.slug);
       url.searchParams.set("batchSubjectId", lecture.batchSubjectId);
+      url.searchParams.set("subjectSlug", lecture.batchSubjectId);
+      url.searchParams.set("topicSlug", "all");
       url.searchParams.set("scheduleId", lecture.scheduleId);
       url.searchParams.set("type", "penpencilvdo");
       url.searchParams.set("doubtTime", lecture.lastWatchedPointInSec);
+      url.searchParams.set("entryPoint", `RECENTLY_WATCHED_VIDEOS_${lecture.scheduleId}`);
       url.searchParams.set("learn2Earn", "true");
       url.searchParams.set("parentId", lecture.batchId);
       url.searchParams.set("vType", "BATCHES");
-      url.searchParams.set("childId", lecture._id);
+      url.searchParams.set("childId", lecture.videoDetails.findKey);
 
       // Open in new tab
       window.open(url.toString(), "_blank");
