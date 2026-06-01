@@ -42,6 +42,8 @@ chrome.runtime.onInstalled.addListener((details) => {
       enabled: true,
       version: chrome.runtime.getManifest().version,
       logs: [],
+      autoCopyEnabled: false,
+      lastAutoCopyTime: null,
     });
     log('info', 'First install - defaults set');
   }
@@ -109,6 +111,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'getData':
       chrome.storage.local.get(null).then((data) => {
         safeSendResponse(sendResponse, { status: 'success', data });
+      });
+      return true;
+
+    case 'toggleAutoCopy':
+      chrome.storage.local.get(['autoCopyEnabled']).then(({ autoCopyEnabled }) => {
+        const newState = !autoCopyEnabled;
+        chrome.storage.local.set({ autoCopyEnabled: newState });
+        log('info', `Auto-copy toggled to: ${newState}`);
+        safeSendResponse(sendResponse, { status: 'success', autoCopyEnabled: newState });
+      });
+      return true;
+
+    case 'getAutoCopyStatus':
+      chrome.storage.local.get(['autoCopyEnabled', 'lastAutoCopyTime']).then((data) => {
+        safeSendResponse(sendResponse, { 
+          status: 'success', 
+          autoCopyEnabled: data.autoCopyEnabled ?? false,
+          lastAutoCopyTime: data.lastAutoCopyTime ?? null
+        });
       });
       return true;
 
@@ -710,5 +731,102 @@ function excalidrawAutoSave() {
 // });
 
 // console.log('Smart PIP Manager initialized - monitoring media playback across all tabs');
+
+// ========================
+// AUTO-COPY FUNCTIONALITY
+// Automatically copy slides every 3 minutes when enabled
+// ========================
+
+const AUTO_COPY_INTERVAL = 3 * 60 * 1000; // 3 minutes in milliseconds
+let autoCopyIntervalId = null;
+
+// Function to trigger auto-copy on the active pw.live tab
+async function triggerAutoCopy() {
+  try {
+    // Get the active tab
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+
+    if (!activeTab) {
+      console.log('[AutoCopy] No active tab found');
+      return;
+    }
+
+    // Check if it's a pw.live tab
+    if (!activeTab.url || !activeTab.url.includes('pw.live')) {
+      console.log('[AutoCopy] Active tab is not on pw.live, skipping copy');
+      return;
+    }
+
+    console.log('[AutoCopy] Triggering auto-copy on tab:', activeTab.id);
+
+    // Send message to content script to copy silently
+    chrome.tabs.sendMessage(activeTab.id, { 
+      action: 'copySlideFromShortcut', 
+      silent: true 
+    }).then(() => {
+      console.log('[AutoCopy] Auto-copy message sent successfully');
+      // Update last copy time in storage
+      chrome.storage.local.set({ lastAutoCopyTime: new Date().toISOString() });
+      log('info', 'Auto-copy executed', { tabId: activeTab.id, url: activeTab.url });
+    }).catch((err) => {
+      console.warn('[AutoCopy] Failed to send message:', err);
+      log('warn', 'Auto-copy message failed', { error: String(err) });
+    });
+
+  } catch (error) {
+    console.error('[AutoCopy] Error in triggerAutoCopy:', error);
+    log('error', 'Auto-copy trigger error', { error: String(error) });
+  }
+}
+
+// Start auto-copy interval when enabled
+function startAutoCopy() {
+  if (autoCopyIntervalId !== null) {
+    console.log('[AutoCopy] Auto-copy already running');
+    return;
+  }
+
+  console.log('[AutoCopy] Starting auto-copy interval (every 3 minutes)');
+  
+  // Trigger immediately
+  triggerAutoCopy();
+
+  // Then every 3 minutes
+  autoCopyIntervalId = setInterval(triggerAutoCopy, AUTO_COPY_INTERVAL);
+  log('info', 'Auto-copy started');
+}
+
+// Stop auto-copy interval when disabled
+function stopAutoCopy() {
+  if (autoCopyIntervalId !== null) {
+    clearInterval(autoCopyIntervalId);
+    autoCopyIntervalId = null;
+    console.log('[AutoCopy] Auto-copy interval stopped');
+    log('info', 'Auto-copy stopped');
+  }
+}
+
+// Check auto-copy status on startup and restore if enabled
+chrome.storage.local.get(['autoCopyEnabled']).then(({ autoCopyEnabled }) => {
+  console.log('[AutoCopy] Auto-copy enabled on startup:', autoCopyEnabled);
+  if (autoCopyEnabled) {
+    startAutoCopy();
+  }
+});
+
+// Listen for storage changes to toggle auto-copy
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && 'autoCopyEnabled' in changes) {
+    const newValue = changes.autoCopyEnabled.newValue;
+    console.log('[AutoCopy] Auto-copy enabled changed to:', newValue);
+    
+    if (newValue) {
+      startAutoCopy();
+    } else {
+      stopAutoCopy();
+    }
+  }
+});
 
 export {};

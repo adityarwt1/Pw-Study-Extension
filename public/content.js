@@ -6,12 +6,14 @@ console.log('[Content Script] Loaded on:', window.location.href);
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('[Content] GLOBAL Message received:', request);
   if (request.action === 'copySlideFromShortcut') {
-    console.log('[Content] Copy slide shortcut triggered from background');
+    console.log('[Content] Copy slide shortcut triggered from background, silent:', request.silent);
     if (window.location.href.includes('pw.live')) {
-      copySlideToClipboard?.();
+      copySlideToClipboard?.(request.silent);
     } else {
       console.error('[Content] Not on pw.live page, cannot copy slide');
-      alert('This feature only works on pw.live lecture pages');
+      if (!request.silent) {
+        alert('This feature only works on pw.live lecture pages');
+      }
     }
   }
 });
@@ -21,9 +23,9 @@ console.log('[Content] GLOBAL Message listener registered');
 // ========================
 // COPY SLIDE FUNCTIONALITY (GLOBAL)
 // ========================
-const copySlideToClipboard = async () => {
+const copySlideToClipboard = async (silent = false) => {
   try {
-    console.log('[Content] Copy slide triggered');
+    console.log('[Content] Copy slide triggered, silent:', silent);
 
     function getSlideAtTime(slides, currentTimeInSeconds) {
       let low = 0, high = slides.length - 1, result = 0;
@@ -61,7 +63,9 @@ const copySlideToClipboard = async () => {
 
     if (!token || !batchSlug || !subjectSlug || !scheduleId) {
       console.error('[Content] Missing required parameters', { token: !!token, batchSlug, subjectSlug, scheduleId });
-      alert("Missing required parameters. Make sure:\n1. Token is set\n2. You're on a pw.live lecture page\n3. All URL parameters are present");
+      if (!silent) {
+        alert("Missing required parameters. Make sure:\n1. Token is set\n2. You're on a pw.live lecture page\n3. All URL parameters are present");
+      }
       return;
     }
 
@@ -98,6 +102,39 @@ const copySlideToClipboard = async () => {
 
     // Fetch image
     const responseImg = await fetch(imageUrl);
+    if (!responseImg.ok) throw new Error(`Fetch failed: ${responseImg.status}`);
+    const blob = await responseImg.blob();
+    console.log('[Content] Image blob received, size:', blob.size);
+
+    // Convert to PNG and copy to clipboard
+    const pngBlob = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("Canvas toBlob failed"))),
+          "image/png"
+        );
+      };
+      img.onerror = () => reject(new Error("Image load failed"));
+      img.src = URL.createObjectURL(blob);
+    });
+
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
+    console.log('[Content] ✓ Slide copied to clipboard!');
+    if (!silent) {
+      alert("✓ Slide copied to clipboard! (Shift+Alt+C)");
+    }
+  } catch (error) {
+    console.error('[Content] Error copying slide:', error);
+    if (!silent) {
+      alert("Error: " + (error instanceof Error ? error.message : "Unknown error"));
+    }
+  }
+};
     if (!responseImg.ok) throw new Error(`Fetch failed: ${responseImg.status}`);
     const blob = await responseImg.blob();
     console.log('[Content] Image blob received, size:', blob.size);
