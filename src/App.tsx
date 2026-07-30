@@ -9,6 +9,7 @@ import TimeTravel from "./components/TimeTravel";
 import EnabledRightClick from "./components/EnabledRightClick";
 import ProvideToken from "./components/ProivideToken";
 import OpenAttachements from "./components/OpenAttachements";
+import MapTimeStamps from "./components/MapTimeStamps";
 // import SlideImageCopier from "./components/SlieImageCopierV2";
 // import MultiplicationTables from "./components/MulitipleTable";
 
@@ -71,6 +72,7 @@ const MainPlayGround = () => {
       <TimeTravel />
       <ProvideToken />
       <EnabledRightClick />
+      <MapTimeStamps/>
       {/* <SlideImageCopier /> */}
       {/* <SlideImageCopier /> */}
     </div>
