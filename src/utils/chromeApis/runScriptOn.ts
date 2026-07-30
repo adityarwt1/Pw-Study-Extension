@@ -1,11 +1,13 @@
-export const excuteScript = async <T extends unknown[]>(
+export const excuteScript = async <T extends unknown[], R = unknown>(
   tabId: number,
-  func: (...args: T) => void,
+  func: (...args: T) => R | Promise<R>,
   args: T = [] as unknown as T,
-) => {
-  await chrome.scripting.executeScript({
+): Promise<R | undefined> => {
+  const results = await chrome.scripting.executeScript({
     target: { tabId },
     func,
     args,
   });
+
+  return results?.[0]?.result as R | undefined;
 };
