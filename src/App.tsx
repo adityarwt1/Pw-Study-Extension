@@ -48,6 +48,10 @@ const MainPlayGround = () => {
         name="Lakshya 2026 Test"
         url="https://www.pw.live/study-v2/batches/65dc6fbabb55350018d555b7/batch-overview?isNewPpjFlow=true&pageName=ALL_TESTS#Tests_6"
       />
+      <WebsiteOpener
+        name="Lakshya 360"
+        url="https://www.pw.live/study-v2/batches/6a86ce9141c8c3630248cf70/batch-overview?"
+      />
 
       <WebsiteOpener
         name="Manzil 2026 Physics"

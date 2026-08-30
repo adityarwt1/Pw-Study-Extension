@@ -130,16 +130,28 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // ========================
-// YOUTUBE BLOCKER
-// Block YouTube tabs automatically
+// YOUTUBE REDIRECT
+// Redirect YouTube tabs to the local app running on localhost:3000
 // ========================
-const YOUTUBE_URL_PATTERN = "youtube.com";
+const YOUTUBE_URL_PATTERN = 'youtube.com';
+const LOCALHOST_REDIRECT_URL = 'http://localhost:3000';
+const SPOTIFY_URL_PATTERN = 'open.spotify.com';
+
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    if (tab.url.includes(YOUTUBE_URL_PATTERN)) {
-      chrome.tabs.remove(tabId, () => {
-        console.log("YouTube blocked and tab closed.");
+    if (tab.url.includes(YOUTUBE_URL_PATTERN) && !tab.url.startsWith(LOCALHOST_REDIRECT_URL)) {
+      chrome.tabs.update(tabId, { url: LOCALHOST_REDIRECT_URL }, () => {
+        console.log('YouTube tab redirected to localhost:3000');
+      });
+    }
+  }
+});
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    if (tab.url.includes(SPOTIFY_URL_PATTERN) && !tab.url.startsWith(LOCALHOST_REDIRECT_URL)) {
+      chrome.tabs.update(tabId, { url: LOCALHOST_REDIRECT_URL }, () => {
+        console.log('YouTube tab redirected to localhost:3000');
       });
     }
   }
