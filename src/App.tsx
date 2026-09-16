@@ -7,7 +7,7 @@ import WebsiteOpener from "./components/WebsiteOpener";
 import HideStamps from "./components/HideTimeStamps";
 import TimeTravel from "./components/TimeTravel";
 import EnabledRightClick from "./components/EnabledRightClick";
-import ProvideToken from "./components/ProivideToken";
+import YouTubeBlocker from "./components/YouTubeBlocker";
 import OpenAttachements from "./components/OpenAttachements";
 import MapTimeStamps from "./components/MapTimeStamps";
 // import SlideImageCopier from "./components/SlieImageCopierV2";
@@ -98,7 +98,7 @@ const MainPlayGround = () => {
       {/* <MultiplicationTables/> */}
 
       <TimeTravel />
-      <ProvideToken />
+      <YouTubeBlocker />
       <EnabledRightClick />
       <MapTimeStamps/>
       {/* <SlideImageCopier /> */}

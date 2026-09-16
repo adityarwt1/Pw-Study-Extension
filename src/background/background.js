@@ -42,6 +42,7 @@ chrome.runtime.onInstalled.addListener((details) => {
       enabled: true,
       version: chrome.runtime.getManifest().version,
       logs: [],
+      youtubeBlocked: true,
     });
     log('info', 'First install - defaults set');
   }
@@ -130,29 +131,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // ========================
-// YOUTUBE REDIRECT
-// Redirect YouTube tabs to the local app running on localhost:3000
+// YOUTUBE BLOCKING
 // ========================
 const YOUTUBE_URL_PATTERN = 'youtube.com';
-const LOCALHOST_REDIRECT_URL = 'http://localhost:3000';
-const SPOTIFY_URL_PATTERN = 'open.spotify.com';
+const NEW_TAB_URL = 'chrome://newtab';
 
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    if (tab.url.includes(YOUTUBE_URL_PATTERN) && !tab.url.startsWith(LOCALHOST_REDIRECT_URL)) {
-      chrome.tabs.update(tabId, { url: LOCALHOST_REDIRECT_URL }, () => {
-        console.log('YouTube tab redirected to localhost:3000');
-      });
-    }
-  }
-});
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    if (tab.url.includes(SPOTIFY_URL_PATTERN) && !tab.url.startsWith(LOCALHOST_REDIRECT_URL)) {
-      chrome.tabs.update(tabId, { url: LOCALHOST_REDIRECT_URL }, () => {
-        console.log('YouTube tab redirected to localhost:3000');
-      });
+    const { youtubeBlocked = true } = await chrome.storage.local.get('youtubeBlocked');
+    if (youtubeBlocked && tab.url.includes(YOUTUBE_URL_PATTERN)) {
+      chrome.tabs.update(tabId, { url: NEW_TAB_URL });
     }
   }
 });
