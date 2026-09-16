@@ -109,7 +109,7 @@ const OpenAttachments = () => {
   }, [status]);
 
   return (
-    <button onClick={handleOpenAttachments}>
+    <button onClick={handleOpenAttachments} title={status || "Open Attachments"}>
       {status || "Open Attachments"}
     </button>
   );

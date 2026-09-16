@@ -36,7 +36,9 @@ const DownLoadAttachement = ()=>{
           );
     }
     return (
-        <button onClick={downloadAttachement}>Class Note</button>
+                <button onClick={downloadAttachement} title="Class Note">
+                    Class Note
+                </button>
     )
 }
 

@@ -115,14 +115,20 @@ const MapTimeStamps = () => {
   return (
     <div>
       <div>
-        <button onClick={loadTimelines}>{status || "Load TimeStamps"}</button>
+        <button onClick={loadTimelines} title={status || "Load TimeStamps"}>
+          {status || "Load TimeStamps"}
+        </button>
       </div>
 
       {timelines.map((tl) => (
         <div key={tl.name}>
           <div>{tl.name}</div>
           {tl.subtopics.map((s) => (
-            <button key={s._id} onClick={() => seekTo(timeToSeconds(s.startTime))}>
+            <button
+              key={s._id}
+              onClick={() => seekTo(timeToSeconds(s.startTime))}
+              title={s.name}
+            >
               {s.name}
             </button>
           ))}

@@ -11,7 +11,7 @@ const WebsiteOpener = ({ name, url }: { name: string; url: string }) => {
     }, [url]);
   };
 
-  return <button onClick={handleOpenWebsiteUrl}>{name}</button>;
+  return <button onClick={handleOpenWebsiteUrl} title={name}>{name}</button>;
 };
 
 export default WebsiteOpener;

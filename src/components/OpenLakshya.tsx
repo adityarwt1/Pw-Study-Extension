@@ -18,7 +18,7 @@ const OpenBatch = ({ name, id }: { name: string; id: string }) => {
     );
   };
 
-  return <button onClick={openBatch}>{name}</button>;
+  return <button onClick={openBatch} title={name}>{name}</button>;
 };
 
 export default OpenBatch

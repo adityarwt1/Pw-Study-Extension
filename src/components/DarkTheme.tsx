@@ -76,7 +76,9 @@ const DarkThemScriptForPw = () => {
   };
 
   return (
-    <button onClick={handleDarkTheme}>Switch Theme</button>
+    <button onClick={handleDarkTheme} title="Switch Theme">
+      Switch Theme
+    </button>
   )
 };
 export default DarkThemScriptForPw;

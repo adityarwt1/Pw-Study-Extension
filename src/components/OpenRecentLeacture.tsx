@@ -47,6 +47,10 @@ const OpenRecentLecture = () => {
       window.open(url.toString(), "_blank");
     });
   };
-  return <button onClick={handleOpenRecentBatch}>Recent Lecture</button>;
+  return (
+    <button onClick={handleOpenRecentBatch} title="Recent Lecture">
+      Recent Lecture
+    </button>
+  );
 };
 export default OpenRecentLecture;

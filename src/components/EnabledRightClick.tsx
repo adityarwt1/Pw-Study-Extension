@@ -33,7 +33,11 @@ const EnabledRightClick = () => {
     console.log("Right-click enabled!");
   };
 
-  return <button onClick={handleEnabledRightClick}>Enable Right Click</button>;
+  return (
+    <button onClick={handleEnabledRightClick} title="Enable Right Click">
+      Enable Right Click
+    </button>
+  );
 };
 
 export default EnabledRightClick;

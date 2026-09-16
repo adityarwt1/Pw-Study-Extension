@@ -18,7 +18,10 @@ const YouTubeBlocker = () => {
   };
 
   return (
-    <button onClick={toggleYouTubeBlock}>
+    <button
+      onClick={toggleYouTubeBlock}
+      title={youtubeBlocked ? "Allow YouTube" : "Block YouTube"}
+    >
       {youtubeBlocked ? "Allow YouTube" : "Block YouTube"}
     </button>
   );

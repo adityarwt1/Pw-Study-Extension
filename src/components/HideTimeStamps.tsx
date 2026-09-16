@@ -50,6 +50,7 @@ const HideStamps = () => {
     
       <button 
         onClick={handleOnClickFunction}
+        title="Hide Timestamps"
         // style={{ cursor: "pointer", padding: "5px 10px" }}
       >
         Hide Timestamps

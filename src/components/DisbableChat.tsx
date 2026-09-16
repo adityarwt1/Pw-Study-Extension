@@ -34,7 +34,12 @@ const DisableChat = () => {
    },[])
     return (
        
-        <button onClick={disableChatPw}>{isChatDisabled ? "Enable Chat":"Disable Chat"}</button>
+                <button
+                    onClick={disableChatPw}
+                    title={isChatDisabled ? "Enable Chat" : "Disable Chat"}
+                >
+                    {isChatDisabled ? "Enable Chat" : "Disable Chat"}
+                </button>
     )
 }
 export default DisableChat

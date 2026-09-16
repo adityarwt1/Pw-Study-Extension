@@ -91,7 +91,9 @@ const TimeTravel = () => {
   };
 
   return (
-      <button onClick={handleTimeTravel}>Time Travel (Window)</button>
+      <button onClick={handleTimeTravel} title="Time Travel (Window)">
+        Time Travel (Window)
+      </button>
   );
 };
 
