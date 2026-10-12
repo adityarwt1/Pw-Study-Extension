@@ -831,4 +831,25 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
 });
 
+function isCompleteFrontendTarget(url) {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.origin === "https://completefrontend.com" && parsedUrl.pathname.startsWith("/javascript");
+  } catch {
+    return false;
+  }
+}
+
+function runArticleAutomation(tabId) {
+  chrome.tabs.sendMessage(tabId, { action: "scrollAndClick" }).catch((error) => {
+    console.log("Could not send article automation message:", error.message);
+  });
+}
+const GENERAL_TIME =  1000 * 60 * 6 ; // 10 seconds
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && isCompleteFrontendTarget(tab.url)) {
+    setTimeout(() => runArticleAutomation(tabId), GENERAL_TIME);
+  }
+});
+
 export {};

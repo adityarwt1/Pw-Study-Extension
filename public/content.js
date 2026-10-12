@@ -135,35 +135,6 @@ const copySlideToClipboard = async (silent = false) => {
     }
   }
 };
-    if (!responseImg.ok) throw new Error(`Fetch failed: ${responseImg.status}`);
-    const blob = await responseImg.blob();
-    console.log('[Content] Image blob received, size:', blob.size);
-
-    // Convert to PNG and copy to clipboard
-    const pngBlob = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.getContext("2d").drawImage(img, 0, 0);
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("Canvas toBlob failed"))),
-          "image/png"
-        );
-      };
-      img.onerror = () => reject(new Error("Image load failed"));
-      img.src = URL.createObjectURL(blob);
-    });
-
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
-    console.log('[Content] ✓ Slide copied to clipboard!');
-    alert("✓ Slide copied to clipboard! (Shift+Alt+C)");
-  } catch (error) {
-    console.error('[Content] Error copying slide:', error);
-    alert("Error: " + (error instanceof Error ? error.message : "Unknown error"));
-  }
-};
 
 console.log('[Content] copySlideToClipboard function defined');
 
@@ -289,3 +260,36 @@ if (window.location.href.includes('pw.live')) {
   console.log('✓ All PW.live features initialized!');
 }
 
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action !== "scrollAndClick") return;
+
+  window.scrollTo({
+    top: document.documentElement.scrollHeight,
+    behavior: "smooth"
+  });
+
+  const findAndClickTarget = () => {
+    const footer = document.querySelector(".article-footer");
+    const target = footer?.children[1];
+
+    if (target) {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+      setTimeout(()=>target.click(), 3000)
+      console.log("Article footer button clicked.");
+      return true;
+    }
+
+    return false;
+  };
+
+  const observer = new MutationObserver(findAndClickTarget);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+// const generalTime = 1000 * 10 
+  const timeoutId = setTimeout(() => {
+    observer.disconnect();
+    console.log("Article footer target was not found.");
+  }, 1000);
+
+  findAndClickTarget();
+});

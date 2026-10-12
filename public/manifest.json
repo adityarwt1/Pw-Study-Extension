@@ -19,7 +19,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.pw.live/*", "http://*.pw.live/*"],
+      "matches": [
+        "https://*.pw.live/*",
+        "http://*.pw.live/*",
+        "https://completefrontend.com/javascript*"
+      ],
       "js": ["content.js"],
       "run_at": "document_start"
     }

@@ -31,6 +31,10 @@ const MainPlayGround = () => {
         id="6779345c20fa0756e4a7fd08"
       />
       <OpenBatch
+        name="MANZIL 2024"
+        id="654b31fd3d24f600180fe031"
+      />
+      <OpenBatch
         name="Lakshya 2026"
         id="65dc6fbabb55350018d555b7"
       />
