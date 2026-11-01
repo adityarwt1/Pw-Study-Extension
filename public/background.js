@@ -126,8 +126,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'getAutoCopyStatus':
       chrome.storage.local.get(['autoCopyEnabled', 'lastAutoCopyTime']).then((data) => {
-        safeSendResponse(sendResponse, { 
-          status: 'success', 
+        safeSendResponse(sendResponse, {
+          status: 'success',
           autoCopyEnabled: data.autoCopyEnabled ?? false,
           lastAutoCopyTime: data.lastAutoCopyTime ?? null
         });
@@ -148,24 +148,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.commands.onCommand.addListener((command) => {
   log('info', 'Command triggered:', { command });
   console.log('[BG] Command triggered:', command);
-  
+
   if (command === 'copy-slide') {
     log('info', 'Copy slide command triggered');
     console.log('[BG] Copy slide command triggered - getting active tab');
-    
+
     // Get the active tab and send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       console.log('[BG] Tabs query result:', tabs);
       const tab = tabs[0];
-      
+
       if (!tab) {
         console.error('[BG] No active tab found');
         log('error', 'No active tab found');
         return;
       }
-      
+
       console.log('[BG] Active tab URL:', tab.url);
-      
+
       if (tab?.id && tab.url?.includes('pw.live')) {
         console.log('[BG] Sending message to tab:', tab.id);
         chrome.tabs.sendMessage(tab.id, { action: 'copySlideFromShortcut' }).then(() => {
@@ -248,7 +248,6 @@ const autoRunPWFeatures = () => {
       vjsElement.style.opacity = "0";
       vjsElement.style.pointerEvents = "none";
     }
-    console.log('✓ Timestamps hidden successfully');
   };
 
   // 2. HIDE CHAT
@@ -256,7 +255,7 @@ const autoRunPWFeatures = () => {
     const chatContainer = document.querySelector("[class*='chat']");
     const chatSidebar = document.querySelector("[class*='sidebar']");
     const chatSection = document.querySelector("section[class*='chat']");
-    
+
     if (chatContainer) {
       chatContainer.style.display = "none";
     }
@@ -266,7 +265,6 @@ const autoRunPWFeatures = () => {
     if (chatSection) {
       chatSection.style.display = "none";
     }
-    console.log('✓ Chat hidden successfully');
   };
 
   // 3. ENABLE RIGHT-CLICK
@@ -538,7 +536,7 @@ function excalidrawAutoSave() {
 //     // Check all other tabs for playing media
 //     for (const tab of allTabs) {
 //       if (tab.id === tabId) continue; // Skip the active tab
-      
+
 //       if (isTabPlayingMedia(tab)) {
 //         console.log(`Found playing media in background tab ${tab.id}`);
 //         await attemptPIP(tab.id);
@@ -641,10 +639,10 @@ function excalidrawAutoSave() {
 
 //     // Try each video until one succeeds
 //     let pipEnabled = false;
-    
+
 //     for (let i = 0; i < videos.length; i++) {
 //       const video = videos[i];
-      
+
 //       console.log(`Attempting PIP on video ${i}:`, {
 //         paused: video.paused,
 //         ended: video.ended,
@@ -671,7 +669,7 @@ function excalidrawAutoSave() {
 //     if (!pipEnabled) {
 //       console.log('Attempting PIP with gesture simulation');
 //       const firstVideo = videos[0];
-      
+
 //       // Add click listener to capture next user interaction
 //       const clickHandler = () => {
 //         firstVideo.requestPictureInPicture()
@@ -679,7 +677,7 @@ function excalidrawAutoSave() {
 //           .catch(err => console.log('PIP via click failed:', err.message));
 //         document.removeEventListener('click', clickHandler, true);
 //       };
-      
+
 //       document.addEventListener('click', clickHandler, true);
 //       console.log('Waiting for user click to enable PIP');
 //     }
@@ -763,9 +761,9 @@ async function triggerAutoCopy() {
     console.log('[AutoCopy] Triggering auto-copy on tab:', activeTab.id);
 
     // Send message to content script to copy silently
-    chrome.tabs.sendMessage(activeTab.id, { 
-      action: 'copySlideFromShortcut', 
-      silent: true 
+    chrome.tabs.sendMessage(activeTab.id, {
+      action: 'copySlideFromShortcut',
+      silent: true
     }).then(() => {
       console.log('[AutoCopy] Auto-copy message sent successfully');
       // Update last copy time in storage
@@ -790,7 +788,7 @@ function startAutoCopy() {
   }
 
   console.log('[AutoCopy] Starting auto-copy interval (every 3 minutes)');
-  
+
   // Trigger immediately
   triggerAutoCopy();
 
@@ -822,7 +820,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === 'local' && 'autoCopyEnabled' in changes) {
     const newValue = changes.autoCopyEnabled.newValue;
     console.log('[AutoCopy] Auto-copy enabled changed to:', newValue);
-    
+
     if (newValue) {
       startAutoCopy();
     } else {
@@ -841,15 +839,27 @@ function isCompleteFrontendTarget(url) {
 }
 
 function runArticleAutomation(tabId) {
-  chrome.tabs.sendMessage(tabId, { action: "scrollAndClick" }).catch((error) => {
+  chrome.tabs.sendMessage(tabId, {
+    action: "scrollAndClick"
+  }).catch((error) => {
     console.log("Could not send article automation message:", error.message);
   });
 }
-const GENERAL_TIME =  1000 * 60 * 6 ; // 10 seconds
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && isCompleteFrontendTarget(tab.url)) {
-    setTimeout(() => runArticleAutomation(tabId), GENERAL_TIME);
+    runArticleAutomation(tabId);
   }
 });
 
-export {};
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  chrome.tabs.get(tabId).then((tab) => {
+    if (isCompleteFrontendTarget(tab.url)) {
+      runArticleAutomation(tabId);
+    }
+  }).catch((error) => {
+    console.log("Could not check activated tab:", error.message);
+  });
+});
+
+export { };

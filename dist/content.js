@@ -224,7 +224,6 @@ if (window.location.href.includes('pw.live')) {
       }
     }, true);
 
-    console.log('✓ Right-click enabled!');
   };
 
 
@@ -260,36 +259,58 @@ if (window.location.href.includes('pw.live')) {
   console.log('✓ All PW.live features initialized!');
 }
 
+const MIN_GENERAL_TIME = 1000 * 60 * 6;
+const MAX_GENERAL_TIME = 1000 * 60 * 16;
+let articleAutomationTimer;
+
+function showFaviconRedDot() {
+  const iconLinks = [...document.querySelectorAll('link[rel~="icon"]')];
+  const primaryIcon = iconLinks[0];
+  const originalHref = primaryIcon?.dataset.originalHref || primaryIcon?.href || "/favicon.ico";
+  const image = new Image();
+
+  image.crossOrigin = "anonymous";
+  image.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    context.beginPath();
+    context.arc(51, 13, 10, 0, Math.PI * 2);
+    context.fillStyle = "#e53935";
+    context.fill();
+    context.lineWidth = 3;
+    context.strokeStyle = "#ffffff";
+    context.stroke();
+
+    const faviconUrl = canvas.toDataURL("image/png");
+    const linksToUpdate = iconLinks.length ? iconLinks : [document.createElement("link")];
+
+    linksToUpdate.forEach((link) => {
+      link.rel = "icon";
+      link.href = faviconUrl;
+      link.dataset.originalHref = originalHref;
+      if (!link.isConnected) document.head.appendChild(link);
+    });
+  };
+  image.onerror = () => console.warn("Could not load the existing favicon for the red-dot indicator.");
+  image.src = new URL(originalHref, window.location.href).href;
+}
+
 chrome.runtime.onMessage.addListener((message) => {
   if (message.action !== "scrollAndClick") return;
 
-  window.scrollTo({
-    top: document.documentElement.scrollHeight,
-    behavior: "smooth"
-  });
+  clearTimeout(articleAutomationTimer);
+  const generalTime = MIN_GENERAL_TIME + Math.random() * (MAX_GENERAL_TIME - MIN_GENERAL_TIME);
+  // const generalTime = 1000 * 10
+  console.log(`Article automation scheduled in ${Math.round(generalTime / 60000)} minutes.`);
 
-  const findAndClickTarget = () => {
-    const footer = document.querySelector(".article-footer");
-    const target = footer?.children[1];
-
-    if (target) {
-      observer.disconnect();
-      clearTimeout(timeoutId);
-      setTimeout(()=>target.click(), 3000)
-      console.log("Article footer button clicked.");
-      return true;
-    }
-
-    return false;
-  };
-
-  const observer = new MutationObserver(findAndClickTarget);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-// const generalTime = 1000 * 10 
-  const timeoutId = setTimeout(() => {
-    observer.disconnect();
-    console.log("Article footer target was not found.");
-  }, 1000);
-
-  findAndClickTarget();
+  articleAutomationTimer = setTimeout(() => {
+    showFaviconRedDot();
+    console.log("Article automation time reached; red dot added to the favicon.");
+  }, generalTime);
 });
