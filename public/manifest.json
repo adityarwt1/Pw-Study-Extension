@@ -26,6 +26,14 @@
       ],
       "js": ["content.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*"
+      ],
+      "js": ["youtube-filter.js"],
+      "run_at": "document_idle"
     }
   ],
   "permissions": [
