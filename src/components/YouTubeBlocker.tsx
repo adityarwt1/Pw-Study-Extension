@@ -6,7 +6,8 @@ const YOUTUBE_TOPICS_KEY = "youtubeTopics";
 const YouTubeBlocker = () => {
   const [youtubeBlocked, setYoutubeBlocked] = useState(true);
   const [youtubeTopics, setYoutubeTopics] = useState("");
-  const [topicsSaved, setTopicsSaved] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [topicsChanged, setTopicsChanged] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -16,6 +17,7 @@ const YouTubeBlocker = () => {
         setYoutubeBlocked(Boolean(data[YOUTUBE_BLOCKED_KEY] ?? true));
         const savedTopics = data[YOUTUBE_TOPICS_KEY];
         setYoutubeTopics(typeof savedTopics === "string" ? savedTopics : "");
+        setSettingsLoaded(true);
       })
       .catch((loadError: unknown) => {
         console.error("Failed to load YouTube settings:", loadError);
@@ -23,48 +25,52 @@ const YouTubeBlocker = () => {
       });
   }, []);
 
+  useEffect(() => {
+    if (!settingsLoaded || !topicsChanged) return;
+
+    const timeoutId = window.setTimeout(() => {
+      chrome.storage.local
+        .set({ [YOUTUBE_TOPICS_KEY]: youtubeTopics })
+        .then(() => setError(""))
+        .catch((saveError: unknown) => {
+          console.error("Failed to save YouTube topics:", saveError);
+          setError("Could not save topics. Please try again.");
+        });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [settingsLoaded, topicsChanged, youtubeTopics]);
+
   const toggleYouTubeBlock = async () => {
     const nextValue = !youtubeBlocked;
     await chrome.storage.local.set({ [YOUTUBE_BLOCKED_KEY]: nextValue });
     setYoutubeBlocked(nextValue);
   };
 
-  const saveTopics = async () => {
-    try {
-      await chrome.storage.local.set({ [YOUTUBE_TOPICS_KEY]: youtubeTopics });
-      setTopicsSaved(true);
-      setError("");
-    } catch (saveError: unknown) {
-      console.error("Failed to save YouTube topics:", saveError);
-      setTopicsSaved(false);
-      setError("Could not save topics. Please try again.");
-    }
-  };
-
   return (
-    <section className="youtube-topic-filter">
-      <label htmlFor="youtube-topics">YouTube topics to show</label>
+    <>
       <input
         id="youtube-topics"
+        className="youtube-topic-input"
         type="text"
+        aria-label="YouTube topics to show"
         value={youtubeTopics}
+        disabled={!settingsLoaded}
         onChange={(event) => {
           setYoutubeTopics(event.target.value);
-          setTopicsSaved(false);
+          setTopicsChanged(true);
         }}
-        placeholder="e.g. jee, coding"
+        placeholder="YouTube topics (e.g. jee, coding)"
+        title={error || "Topics save automatically"}
       />
-      <p>Separate topics with commas. Cards matching any topic will be shown.</p>
-      <button onClick={saveTopics}>Save topics</button>
-      {topicsSaved && <p role="status">Topics saved.</p>}
-      {error && <p role="alert">{error}</p>}
       <button
         onClick={toggleYouTubeBlock}
         title={youtubeBlocked ? "Allow YouTube" : "Block YouTube"}
       >
         {youtubeBlocked ? "Allow YouTube" : "Block YouTube"}
       </button>
-    </section>
+      {error && <p role="alert">{error}</p>}
+    </>
   );
 };
 
