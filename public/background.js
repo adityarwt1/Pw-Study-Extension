@@ -201,14 +201,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 const YOUTUBE_URL_PATTERN = 'youtube.com';
 const NEW_TAB_URL = 'chrome://newtab';
 
+const isYouTubeUrl = (url) => {
+  const hostname = new URL(url).hostname;
+  return hostname === YOUTUBE_URL_PATTERN || hostname.endsWith(`.${YOUTUBE_URL_PATTERN}`);
+};
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    chrome.storage.local.get('youtubeBlocked').then(({ youtubeBlocked = true }) => {
-      if (youtubeBlocked && tab.url.includes(YOUTUBE_URL_PATTERN)) {
-        chrome.tabs.update(tabId, { url: NEW_TAB_URL });
+  if ((changeInfo.url || changeInfo.status === 'complete') && tab.url && isYouTubeUrl(tab.url)) {
+    chrome.storage.local.get('youtubeBlocked').then(async ({ youtubeBlocked = true }) => {
+      if (youtubeBlocked) {
+        await chrome.tabs.update(tabId, { url: NEW_TAB_URL });
       }
-    }
-    );
+    }).catch((error) => {
+      console.error('[YouTube blocker] Failed to block YouTube tab:', error);
+    });
   }
 });
 
