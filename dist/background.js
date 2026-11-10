@@ -184,6 +184,48 @@ chrome.commands.onCommand.addListener((command) => {
       log('error', 'Error querying tabs', { error: String(err) });
     });
   }
+
+  if (command === 'pause-dom-timers') {
+    chrome.tabs.query({ active: true, currentWindow: true }).then(async (tabs) => {
+      const tab = tabs[0];
+      if (typeof tab?.id !== 'number') {
+        log('error', 'Cannot toggle page timers: no active tab found');
+        return;
+      }
+
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: 'MAIN',
+          func: () => window.__pwStudyIntervalController?.toggle(),
+        });
+
+        if (typeof result?.result !== 'boolean') {
+          log('warn', 'Page timer hook unavailable; reload the page first', {
+            tabId: tab.id,
+            url: tab.url,
+          });
+          return;
+        }
+
+        log('info', result.result ? 'Page timers paused' : 'Page timers resumed', {
+          tabId: tab.id,
+          url: tab.url,
+        });
+      } catch (error) {
+        console.error('[BG] Failed to toggle page timers:', error);
+        log('error', 'Failed to toggle page timers', {
+          tabId: tab.id,
+          error: String(error),
+        });
+      }
+    }).catch((error) => {
+      console.error('[BG] Failed to query active tab for timer command:', error);
+      log('error', 'Failed to query active tab for timer command', {
+        error: String(error),
+      });
+    });
+  }
 });
 
 // ========================

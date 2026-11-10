@@ -71,6 +71,12 @@
         "default": "Alt+Shift+Y"
       },
       "description": "Toggle feature"
+    },
+    "pause-dom-timers": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+3"
+      },
+      "description": "Pause or resume page DOM timers"
     }
   }
 }
