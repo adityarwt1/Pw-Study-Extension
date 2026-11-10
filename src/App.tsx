@@ -11,6 +11,7 @@ import YouTubeBlocker from "./components/YouTubeBlocker";
 import OpenAttachements from "./components/OpenAttachements";
 import MapTimeStamps from "./components/MapTimeStamps";
 import PageScrollControls from "./components/PageScrollControls";
+import PauseResumeTimers from "./components/PauseResumeTimers";
 // import SlideImageCopier from "./components/SlieImageCopierV2";
 // import MultiplicationTables from "./components/MulitipleTable";
 
@@ -103,6 +104,7 @@ const MainPlayGround = () => {
       {/* <MultiplicationTables/> */}
 
       <TimeTravel />
+      <PauseResumeTimers />
       <YouTubeBlocker />
       <PageScrollControls />
       <EnabledRightClick />

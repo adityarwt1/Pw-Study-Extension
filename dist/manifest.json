@@ -20,6 +20,15 @@
   "content_scripts": [
     {
       "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": ["pause-dom-intervals.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
         "https://*.pw.live/*",
         "http://*.pw.live/*",
         "https://completefrontend.com/javascript*"
